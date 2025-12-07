@@ -13,10 +13,9 @@ CONTAINER_NAME="${CONTAINER_NAME:-schedulerbot}"
 # 預設版本：latest，可用 --version 覆蓋
 VERSION="${SCHEDULERBOT_VERSION:-latest}"
 
-# 預設 GHCR token（private image 時用）
-# ⚠️ 記得換成你自己的 PAT，或留空讓他走 public image / 既有登入
-DEFAULT_GHCR_TOKEN="REPLACE_ME_WITH_REAL_GHCR_TOKEN"
-TOKEN="${GHCR_TOKEN:-$DEFAULT_GHCR_TOKEN}"
+# GHCR token（private image 時用）
+# 👉 真實 PAT 請放在環境變數 GHCR_TOKEN，或用 --token 傳入
+TOKEN="${GHCR_TOKEN:-}"
 
 # 對外 port & DB 路徑
 HOST_PORT="${HOST_PORT:-3067}"
@@ -55,27 +54,31 @@ while [[ $# -gt 0 ]]; do
 
   # 最簡單：直接裝最新版本（預設 latest）
   curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo bash
+    | sudo -E bash
 
   # 明確指定 latest（效果同預設）
   curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo bash -s -- --version latest
+    | sudo -E bash -s -- --version latest
 
   # 指定某個版本：
   curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo bash -s -- --version 1.3.24
+    | sudo -E bash -s -- --version 1.3.24
 
-  # 如果 image 是 private，或你想覆寫內建 token：
+  # 如果 image 是 private，或你想覆寫環境變數 GHCR_TOKEN：
   curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo bash -s -- --version 1.3.24 --token YOUR_GHCR_PAT
+    | sudo -E bash -s -- --version 1.3.24 --token YOUR_GHCR_PAT
+
+  # 也可以先在機器上 export GHCR_TOKEN：
+  #   export GHCR_TOKEN=YOUR_GHCR_PAT
+  #   curl -s ... | sudo -E bash
 
   # 如果這台機器之前跑過其他 Docker 專案，想全部清掉再裝：
   curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo bash -s -- --version latest --cleanup-all
+    | sudo -E bash -s -- --version latest --cleanup-all
 
 可選參數：
   --version / -v   指定要安裝的 image 版本（預設 ${VERSION}）
-  --token          GHCR PAT，用於 private image 登入或覆寫內建 token
+  --token          GHCR PAT，用於 private image 登入或覆寫 GHCR_TOKEN
   --port           對外埠號（預設 3067）
   --db-dir         DB 目錄（預設 /opt/schedulerbot/db）
   --cleanup-all    ⚠️ 停止並刪除所有 Docker 容器 / 不用的 image / volume
