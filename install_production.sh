@@ -7,14 +7,14 @@ echo "🚀 SchedulerBot Installer"
 echo "==============================="
 echo ""
 
-IMAGE="ghcr.io/xtoolbot-dev/xtoolbot-client"
+# ⬇️ 改成 Docker Hub 的 image
+IMAGE="xtoolbot/xtoolbot-client"
 CONTAINER_NAME="${CONTAINER_NAME:-schedulerbot}"
 
 # 預設版本：latest，可用 --version 覆蓋
 VERSION="${SCHEDULERBOT_VERSION:-latest}"
 
-# GHCR token（private image 時用）
-# 👉 真實 PAT 請放在環境變數 GHCR_TOKEN，或用 --token 傳入
+# GHCR token（以前給 GHCR 用的，現在其實不需要了，可以保留不動）
 TOKEN="${GHCR_TOKEN:-}"
 
 # 對外 port & DB 路徑
@@ -32,7 +32,6 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --token)
-      # 仍然保留參數覆寫機制（可選）
       TOKEN="$2"
       shift 2
       ;;
@@ -54,31 +53,18 @@ while [[ $# -gt 0 ]]; do
 
   # 最簡單：直接裝最新版本（預設 latest）
   curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo -E bash
+    | sudo bash
 
-  # 明確指定 latest（效果同預設）
+  # 明確指定某個版本（如果你未來有打不同 tag）
   curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo -E bash -s -- --version latest
-
-  # 指定某個版本：
-  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo -E bash -s -- --version 1.3.24
-
-  # 如果 image 是 private，或你想覆寫環境變數 GHCR_TOKEN：
-  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo -E bash -s -- --version 1.3.24 --token YOUR_GHCR_PAT
-
-  # 也可以先在機器上 export GHCR_TOKEN：
-  #   export GHCR_TOKEN=YOUR_GHCR_PAT
-  #   curl -s ... | sudo -E bash
+    | sudo bash -s -- --version latest
 
   # 如果這台機器之前跑過其他 Docker 專案，想全部清掉再裝：
   curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo -E bash -s -- --version latest --cleanup-all
+    | sudo bash -s -- --version latest --cleanup-all
 
 可選參數：
-  --version / -v   指定要安裝的 image 版本（預設 ${VERSION}）
-  --token          GHCR PAT，用於 private image 登入或覆寫 GHCR_TOKEN
+  --version / -v   指定要安裝的 image 版本（預設 \${VERSION}）
   --port           對外埠號（預設 3067）
   --db-dir         DB 目錄（預設 /opt/schedulerbot/db）
   --cleanup-all    ⚠️ 停止並刪除所有 Docker 容器 / 不用的 image / volume
@@ -141,14 +127,6 @@ if [[ "$CLEAN_ALL" == true ]]; then
 
   echo "✅ Docker 舊資源已清理完畢。"
   echo ""
-fi
-
-# ---------- GHCR 登入 ----------
-if [[ -n "$TOKEN" ]]; then
-  echo "🔐 使用 GHCR token 登入 ghcr.io..."
-  echo "$TOKEN" | docker login ghcr.io -u xtoolbot-dev --password-stdin
-else
-  echo "ℹ️ 未提供 GHCR token，假設 image 為 public 或已事先登入 ghcr.io。"
 fi
 
 # ---------- 準備 DB 目錄 ----------
