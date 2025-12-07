@@ -159,6 +159,8 @@ docker run -d \
   -p "${HOST_PORT}:3067" \
   -e TZ=Asia/Taipei \
   -e SERVER_URL="${SERVER_URL}" \
+  -e DB_DIR="${DB_DIR}" \
+  -v "${DB_DIR}:${DB_DIR}" \
   --restart unless-stopped \
   "$FULL_IMAGE"
 
@@ -167,4 +169,4 @@ echo "🎉 安裝完成！"
 echo "➡ 請在瀏覽器打開：http://${SERVER_IP}:${HOST_PORT}"
 echo ""
 
-::contentReference[oaicite:0]{index=0}
+
