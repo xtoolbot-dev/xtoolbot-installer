@@ -7,7 +7,7 @@ echo "🚀 SchedulerBot Installer"
 echo "==============================="
 echo ""
 
-IMAGE="ghcr.io/gda-project-dev/schedulerbot"
+IMAGE="ghcr.io/xtoolbot-dev/xtoolbot-client"
 CONTAINER_NAME="${CONTAINER_NAME:-schedulerbot}"
 
 # 預設版本，可用 --version 覆蓋（⚠️ 記得改成你實際最新版本）
@@ -51,15 +51,15 @@ while [[ $# -gt 0 ]]; do
 用法：
 
   # 最簡單（public image 或已經登入 ghcr.io）
-  curl -s https://raw.githubusercontent.com/gda-project-dev/schedulerbot/main/install_production.sh \\
+  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-client/main/install_production.sh \\
     | sudo bash -s -- --version ${VERSION}
 
   # 如果 image 是 private，需要 token：
-  curl -s https://raw.githubusercontent.com/gda-project-dev/schedulerbot/main/install_production.sh \\
+  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-client/main/install_production.sh \\
     | sudo bash -s -- --version ${VERSION} --token YOUR_GHCR_PAT
 
   # 如果這台機器之前跑過其他 Docker 專案，想全部清掉再裝：
-  curl -s https://raw.githubusercontent.com/gda-project-dev/schedulerbot/main/install_production.sh \\
+  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-client/main/install_production.sh \\
     | sudo bash -s -- --version ${VERSION} --cleanup-all
 
 可選參數：
@@ -132,7 +132,7 @@ fi
 # ---------- GHCR 登入（如有提供 token） ----------
 if [[ -n "$TOKEN" ]]; then
   echo "🔐 使用 GHCR token 登入 ghcr.io..."
-  echo "$TOKEN" | docker login ghcr.io -u gda-project-dev --password-stdin
+  echo "$TOKEN" | docker login ghcr.io -u xtoolbot-dev --password-stdin
 else
   echo "ℹ️ 未提供 --token，假設 image 為 public 或已事先登入 ghcr.io。"
 fi
