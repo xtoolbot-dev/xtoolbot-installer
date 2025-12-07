@@ -10,11 +10,13 @@ echo ""
 IMAGE="ghcr.io/xtoolbot-dev/xtoolbot-client"
 CONTAINER_NAME="${CONTAINER_NAME:-schedulerbot}"
 
-# 預設版本，可用 --version 覆蓋（⚠️ 記得改成你實際最新版本）
-VERSION="${SCHEDULERBOT_VERSION:-1.2.9}"
+# 預設版本：latest，可用 --version 覆蓋
+VERSION="${SCHEDULERBOT_VERSION:-latest}"
 
-# GHCR token（private image 時用）
-TOKEN="${GHCR_TOKEN:-}"
+# 預設 GHCR token（private image 時用）
+# ⚠️ 記得換成你自己的 PAT，或留空讓他走 public image / 既有登入
+DEFAULT_GHCR_TOKEN="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"
+TOKEN="${GHCR_TOKEN:-$DEFAULT_GHCR_TOKEN}"
 
 # 對外 port & DB 路徑
 HOST_PORT="${HOST_PORT:-3067}"
@@ -31,6 +33,7 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --token)
+      # 仍然保留參數覆寫機制（可選）
       TOKEN="$2"
       shift 2
       ;;
@@ -50,21 +53,29 @@ while [[ $# -gt 0 ]]; do
       cat <<EOF
 用法：
 
-  # 最簡單（public image 或已經登入 ghcr.io）
-  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-client/main/install_production.sh \\
-    | sudo bash -s -- --version ${VERSION}
+  # 最簡單：直接裝最新版本（預設 latest）
+  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
+    | sudo bash
 
-  # 如果 image 是 private，需要 token：
-  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-client/main/install_production.sh \\
-    | sudo bash -s -- --version ${VERSION} --token YOUR_GHCR_PAT
+  # 明確指定 latest（效果同預設）
+  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
+    | sudo bash -s -- --version latest
+
+  # 指定某個版本：
+  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
+    | sudo bash -s -- --version 1.3.24
+
+  # 如果 image 是 private，或你想覆寫內建 token：
+  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
+    | sudo bash -s -- --version 1.3.24 --token YOUR_GHCR_PAT
 
   # 如果這台機器之前跑過其他 Docker 專案，想全部清掉再裝：
-  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-client/main/install_production.sh \\
-    | sudo bash -s -- --version ${VERSION} --cleanup-all
+  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
+    | sudo bash -s -- --version latest --cleanup-all
 
 可選參數：
   --version / -v   指定要安裝的 image 版本（預設 ${VERSION}）
-  --token          GHCR PAT，用於 private image 登入
+  --token          GHCR PAT，用於 private image 登入或覆寫內建 token
   --port           對外埠號（預設 3067）
   --db-dir         DB 目錄（預設 /opt/schedulerbot/db）
   --cleanup-all    ⚠️ 停止並刪除所有 Docker 容器 / 不用的 image / volume
@@ -129,12 +140,12 @@ if [[ "$CLEAN_ALL" == true ]]; then
   echo ""
 fi
 
-# ---------- GHCR 登入（如有提供 token） ----------
+# ---------- GHCR 登入 ----------
 if [[ -n "$TOKEN" ]]; then
   echo "🔐 使用 GHCR token 登入 ghcr.io..."
   echo "$TOKEN" | docker login ghcr.io -u xtoolbot-dev --password-stdin
 else
-  echo "ℹ️ 未提供 --token，假設 image 為 public 或已事先登入 ghcr.io。"
+  echo "ℹ️ 未提供 GHCR token，假設 image 為 public 或已事先登入 ghcr.io。"
 fi
 
 # ---------- 準備 DB 目錄 ----------
