@@ -159,8 +159,8 @@ docker run -d \
   -p "${HOST_PORT}:3067" \
   -e TZ=Asia/Taipei \
   -e SERVER_URL="${SERVER_URL}" \
-  -e DB_DIR="${DB_DIR}" \
-  -v "${DB_DIR}:${DB_DIR}" \
+  -e DB_DIR="/opt/schedulerbot/db" \        # 👉 告訴程式 DB 在哪
+  -v "${DB_DIR}:/opt/schedulerbot/db" \     # 👉 Host 的 DB_DIR 掛到容器同一路徑
   --restart unless-stopped \
   "$FULL_IMAGE"
 
