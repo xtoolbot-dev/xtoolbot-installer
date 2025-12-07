@@ -15,8 +15,8 @@ VERSION="${SCHEDULERBOT_VERSION:-latest}"
 
 # 預設 GHCR token（private image 時用）
 # ⚠️ 記得換成你自己的 PAT，或留空讓他走 public image / 既有登入
-DEFAULT_GHCR_TOKEN="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"
-TOKEN="${GHCR_TOKEN:-$DEFAULT_GHCR_TOKEN}"
+DEFAULT_GHCR_TOKEN="KYBy2smIZpvQPZoqKYdSmNstbYdfuE2jVitu"
+TOKEN="ghp_${GHCR_TOKEN:-$DEFAULT_GHCR_TOKEN}"
 
 # 對外 port & DB 路徑
 HOST_PORT="${HOST_PORT:-3067}"
