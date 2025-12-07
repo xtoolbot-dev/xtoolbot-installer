@@ -7,8 +7,8 @@ echo "🚀 SchedulerBot Installer"
 echo "==============================="
 echo ""
 
-# ⬇️ 改成 Docker Hub 的 image
-IMAGE="xtoolbot/xtoolbot-client"
+# ⬇️ 改成 Docker Hub 的 image（最少修改：只改這行）
+IMAGE="gda3692/xtoolbot-client"
 CONTAINER_NAME="${CONTAINER_NAME:-schedulerbot}"
 
 # 預設版本：latest，可用 --version 覆蓋
@@ -166,3 +166,5 @@ echo ""
 echo "🎉 安裝完成！"
 echo "➡ 請在瀏覽器打開：http://${SERVER_IP}:${HOST_PORT}"
 echo ""
+
+::contentReference[oaicite:0]{index=0}
