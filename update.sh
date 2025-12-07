@@ -5,7 +5,7 @@ set -euo pipefail
 # SchedulerBot 更新腳本
 # =========================
 
-IMAGE_BASE="ghcr.io/gda-project-dev/schedulerbot"
+IMAGE_BASE="ghcr.io/xtoolbot-dev/xtoolbot-client"
 CONTAINER_NAME="${CONTAINER_NAME:-schedulerbot}"
 
 HOST_PORT="${HOST_PORT:-3067}"
@@ -90,7 +90,7 @@ echo "========================================"
 # ----- Docker login（如提供 token）-----
 if [[ -n "$TOKEN" && "$TOKEN" != "REPLACE_ME_WITH_REAL_GHCR_TOKEN" ]]; then
   echo "🔐 使用 GHCR token 登入 ghcr.io..."
-  echo "$TOKEN" | docker login ghcr.io -u gda-project-dev --password-stdin
+  echo "$TOKEN" | docker login ghcr.io -u xtoolbot-dev --password-stdin
 else
   echo "ℹ️ 未提供有效 GHCR token，假設這台機器已經登錄過 ghcr.io。"
 fi
