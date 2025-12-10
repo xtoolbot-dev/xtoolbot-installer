@@ -143,6 +143,9 @@ if [[ ! -d "$DB_DIR" ]]; then
   mkdir -p "$DB_DIR"
 fi
 
+# ⭐ 確保容器裡的非 root user 也能寫入 DB（避免 SQLITE_CANTOPEN）
+chmod 777 "$DB_DIR" || true
+
 # ---------- 拉 image ----------
 echo "📦 拉取 image：$FULL_IMAGE"
 docker pull "$FULL_IMAGE"
