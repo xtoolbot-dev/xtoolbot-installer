@@ -17,15 +17,24 @@ VERSION="${SCHEDULERBOT_VERSION:-latest}"
 # GHCR token（以前給 GHCR 用的，現在其實不需要了，可以保留不動）
 TOKEN="${GHCR_TOKEN:-}"
 
-# 對外 port & DB 路徑
+# 對外 port
 HOST_PORT="${HOST_PORT:-3067}"
 
-# ⭐ 根據系統判斷預設 DB 目錄（Linux / macOS 不同）
+# ⭐ 根據系統判斷預設 DB 目錄（Linux / macOS / WSL / Windows-GitBash）
 if [[ "${OSTYPE:-}" == darwin* ]]; then
   # macOS：放在 /Users/Shared，Docker Desktop 一定允許掛載
   DB_DIR="${DB_DIR:-/Users/Shared/xtoolbot-db}"
+
+elif grep -qi microsoft /proc/version 2>/dev/null; then
+  # WSL (Windows Subsystem for Linux)：用 C 槽的公用資料夾
+  DB_DIR="${DB_DIR:-/mnt/c/Users/Public/xtoolbot-db}"
+
+elif [[ "${OSTYPE:-}" == msys* || "${OSTYPE:-}" == mingw* ]]; then
+  # Git Bash / MINGW：Docker Desktop 看見的是 /c/Users/... 結構
+  DB_DIR="${DB_DIR:-/c/Users/Public/xtoolbot-db}"
+
 else
-  # Linux：維持原本 /opt/schedulerbot/db
+  # 一般 Linux：維持原本 /opt/schedulerbot/db
   DB_DIR="${DB_DIR:-/opt/schedulerbot/db}"
 fi
 
@@ -74,7 +83,8 @@ while [[ $# -gt 0 ]]; do
 可選參數：
   --version / -v   指定要安裝的 image 版本（預設 \${VERSION}）
   --port           對外埠號（預設 3067）
-  --db-dir         DB 目錄（預設 Linux: /opt/schedulerbot/db，macOS: /Users/Shared/xtoolbot-db）
+  --db-dir         DB 目錄（預設 Linux: /opt/schedulerbot/db，macOS: /Users/Shared/xtoolbot-db，
+                   WSL: /mnt/c/Users/Public/xtoolbot-db，Git Bash: /c/Users/Public/xtoolbot-db）
   --cleanup-all    ⚠️ 停止並刪除所有 Docker 容器 / 不用的 image / volume
 EOF
       exit 0
@@ -163,7 +173,7 @@ if hostname -I >/dev/null 2>&1; then
   # Linux：有 hostname -I
   SERVER_IP=$(hostname -I | awk '{print $1}')
 else
-  # macOS / 其他：退回 hostname 或 localhost
+  # macOS / Windows / 其他：退回 hostname 或 localhost
   SERVER_IP=$(hostname 2>/dev/null || echo "localhost")
 fi
 
