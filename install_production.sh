@@ -148,7 +148,12 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}\$"; then
 fi
 
 # ---------- 計算主機 IP，給 SERVER_URL 用 ----------
-SERVER_IP=$(hostname -I | awk '{print $1}')
+if hostname -I >/dev/null 2>&1; then
+  SERVER_IP=$(hostname -I | awk '{print $1}')
+else
+  SERVER_IP=$(hostname 2>/dev/null || echo "localhost")
+fi
+
 SERVER_URL="http://${SERVER_IP}:${HOST_PORT}"
 echo "🌐 SERVER_URL 將設為：${SERVER_URL}"
 
@@ -168,5 +173,3 @@ echo ""
 echo "🎉 安裝完成！"
 echo "➡ 請在瀏覽器打開：http://${SERVER_IP}:${HOST_PORT}"
 echo ""
-
-
