@@ -185,4 +185,5 @@ docker run -d \
 echo ""
 echo "🎉 安裝完成！"
 echo "➡ 請在瀏覽器打開：http://${SERVER_IP}:${HOST_PORT}"
+echo "➡ 如果你在同一台電腦上，也可以打：http://localhost:${HOST_PORT}"
 echo ""
