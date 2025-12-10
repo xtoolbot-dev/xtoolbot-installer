@@ -19,7 +19,15 @@ TOKEN="${GHCR_TOKEN:-}"
 
 # 對外 port & DB 路徑
 HOST_PORT="${HOST_PORT:-3067}"
-DB_DIR="${DB_DIR:-/opt/schedulerbot/db}"
+
+# ⭐ 根據系統判斷預設 DB 目錄（Linux / macOS 不同）
+if [[ "${OSTYPE:-}" == darwin* ]]; then
+  # macOS：放在 /Users/Shared，Docker Desktop 一定允許掛載
+  DB_DIR="${DB_DIR:-/Users/Shared/xtoolbot-db}"
+else
+  # Linux：維持原本 /opt/schedulerbot/db
+  DB_DIR="${DB_DIR:-/opt/schedulerbot/db}"
+fi
 
 # 是否清掉所有舊 Docker 資源（容器 / image / volume …）
 CLEAN_ALL=false
@@ -66,7 +74,7 @@ while [[ $# -gt 0 ]]; do
 可選參數：
   --version / -v   指定要安裝的 image 版本（預設 \${VERSION}）
   --port           對外埠號（預設 3067）
-  --db-dir         DB 目錄（預設 /opt/schedulerbot/db）
+  --db-dir         DB 目錄（預設 Linux: /opt/schedulerbot/db，macOS: /Users/Shared/xtoolbot-db）
   --cleanup-all    ⚠️ 停止並刪除所有 Docker 容器 / 不用的 image / volume
 EOF
       exit 0
@@ -149,8 +157,10 @@ fi
 
 # ---------- 計算主機 IP，給 SERVER_URL 用 ----------
 if hostname -I >/dev/null 2>&1; then
+  # Linux：有 hostname -I
   SERVER_IP=$(hostname -I | awk '{print $1}')
 else
+  # macOS / 其他：退回 hostname 或 localhost
   SERVER_IP=$(hostname 2>/dev/null || echo "localhost")
 fi
 
