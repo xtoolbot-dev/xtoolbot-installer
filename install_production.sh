@@ -23,18 +23,24 @@ HOST_PORT="${HOST_PORT:-3067}"
 # ⭐ 容器內固定使用的 DB 路徑（程式一律讀這個）
 INTERNAL_DB_DIR="/opt/schedulerbot/db"
 
+# ⭐ 判斷是否本地桌面（mac / windows / WSL），用來決定 SERVER_URL 要不要用 localhost
+IS_LOCAL_DESKTOP=false
+
 # ⭐ 根據系統判斷預設 DB 目錄（Linux / macOS / WSL / Windows-GitBash）
 if [[ "${OSTYPE:-}" == darwin* ]]; then
   # macOS：放在 /Users/Shared，Docker Desktop 一定允許掛載
   DB_DIR="${DB_DIR:-/Users/Shared/xtoolbot-db}"
+  IS_LOCAL_DESKTOP=true
 
 elif grep -qi microsoft /proc/version 2>/dev/null; then
   # WSL (Windows Subsystem for Linux)：用 C 槽的公用資料夾
   DB_DIR="${DB_DIR:-/mnt/c/Users/Public/xtoolbot-db}"
+  IS_LOCAL_DESKTOP=true
 
 elif [[ "${OSTYPE:-}" == msys* || "${OSTYPE:-}" == mingw* ]]; then
   # Git Bash / MINGW：Docker Desktop 看見的是 /c/Users/... 結構
   DB_DIR="${DB_DIR:-/c/Users/Public/xtoolbot-db}"
+  IS_LOCAL_DESKTOP=true
 
 else
   # 一般 Linux：維持原本 /opt/schedulerbot/db
@@ -172,12 +178,16 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}\$"; then
 fi
 
 # ---------- 計算主機 IP，給 SERVER_URL 用 ----------
-if hostname -I >/dev/null 2>&1; then
-  # Linux：有 hostname -I
-  SERVER_IP=$(hostname -I | awk '{print $1}')
+if [[ "$IS_LOCAL_DESKTOP" == true ]]; then
+  # 本地（mac / win / WSL）：一律使用 localhost，避免出現奇怪的 hostname 域名
+  SERVER_IP="localhost"
 else
-  # macOS / Windows / 其他：退回 hostname 或 localhost
-  SERVER_IP=$(hostname 2>/dev/null || echo "localhost")
+  # Linux 伺服器：盡量抓第一個 IP
+  if hostname -I >/dev/null 2>&1; then
+    SERVER_IP=$(hostname -I | awk '{print $1}')
+  else
+    SERVER_IP=$(hostname 2>/dev/null || echo "localhost")
+  fi
 fi
 
 SERVER_URL="http://${SERVER_IP}:${HOST_PORT}"
