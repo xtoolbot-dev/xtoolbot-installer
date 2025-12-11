@@ -7,194 +7,157 @@ echo "🚀 SchedulerBot Installer"
 echo "==============================="
 echo ""
 
-# ⬇️ 改成 Docker Hub 的 image（最少修改：只改這行）
+# ---------------------------------------------------------
+# 基本設定
+# ---------------------------------------------------------
 IMAGE="gda3692/xtoolbot-client"
 CONTAINER_NAME="${CONTAINER_NAME:-schedulerbot}"
-
-# 預設版本：latest，可用 --version 覆蓋
 VERSION="${SCHEDULERBOT_VERSION:-latest}"
-
-# GHCR token（以前給 GHCR 用的，現在其實不需要了，可以保留不動）
 TOKEN="${GHCR_TOKEN:-}"
-
-# 對外 port
 HOST_PORT="${HOST_PORT:-3067}"
-
-# ⭐ 容器內固定使用的 DB 路徑（程式一律讀這個）
 INTERNAL_DB_DIR="/opt/schedulerbot/db"
 
-# ⭐ 判斷是否本地桌面（mac / windows / WSL），用來決定 SERVER_URL 要不要用 localhost
 IS_LOCAL_DESKTOP=false
 
-# ⭐ 根據系統判斷預設 DB 目錄（Linux / macOS / WSL / Windows-GitBash）
+# ---------------------------------------------------------
+# 判斷系統類型
+# ---------------------------------------------------------
 if [[ "${OSTYPE:-}" == darwin* ]]; then
-  # macOS：放在 /Users/Shared，Docker Desktop 一定允許掛載
   DB_DIR="${DB_DIR:-/Users/Shared/xtoolbot-db}"
   IS_LOCAL_DESKTOP=true
 
 elif grep -qi microsoft /proc/version 2>/dev/null; then
-  # WSL (Windows Subsystem for Linux)：用 C 槽的公用資料夾
   DB_DIR="${DB_DIR:-/mnt/c/Users/Public/xtoolbot-db}"
   IS_LOCAL_DESKTOP=true
 
 elif [[ "${OSTYPE:-}" == msys* || "${OSTYPE:-}" == mingw* ]]; then
-  # Git Bash / MINGW：Docker Desktop 看見的是 /c/Users/... 結構
   DB_DIR="${DB_DIR:-/c/Users/Public/xtoolbot-db}"
   IS_LOCAL_DESKTOP=true
 
 else
-  # 一般 Linux：維持原本 /opt/schedulerbot/db
   DB_DIR="${DB_DIR:-/opt/schedulerbot/db}"
 fi
 
-# 是否清掉所有舊 Docker 資源（容器 / image / volume …）
 CLEAN_ALL=false
 
-# ---------- 解析參數 ----------
+# ---------------------------------------------------------
+# 處理參數
+# ---------------------------------------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --version|-v)
-      VERSION="$2"
-      shift 2
-      ;;
-    --token)
-      TOKEN="$2"
-      shift 2
-      ;;
+      VERSION="$2"; shift 2 ;;
     --port)
-      HOST_PORT="$2"
-      shift 2
-      ;;
+      HOST_PORT="$2"; shift 2 ;;
     --db-dir)
-      DB_DIR="$2"
-      shift 2
-      ;;
+      DB_DIR="$2"; shift 2 ;;
     --cleanup-all|--cleanup)
-      CLEAN_ALL=true
-      shift 1
-      ;;
+      CLEAN_ALL=true; shift ;;
     --help|-h)
       cat <<EOF
 用法：
+  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh | sudo bash
 
-  # 最簡單：直接裝最新版本（預設 latest）
-  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo bash
-
-  # 明確指定某個版本（如果你未來有打不同 tag）
-  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo bash -s -- --version latest
-
-  # 如果這台機器之前跑過其他 Docker 專案，想全部清掉再裝：
-  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh \\
-    | sudo bash -s -- --version latest --cleanup-all
-
-可選參數：
-  --version / -v   指定要安裝的 image 版本（預設 \${VERSION}）
-  --port           對外埠號（預設 3067）
-  --db-dir         DB 目錄（預設 Linux: /opt/schedulerbot/db，macOS: /Users/Shared/xtoolbot-db，
-                   WSL: /mnt/c/Users/Public/xtoolbot-db，Git Bash: /c/Users/Public/xtoolbot-db）
-  --cleanup-all    ⚠️ 停止並移除所有 Docker 容器 / 不用的 image / volume
+參數：
+  --version      Image 版本（預設 latest）
+  --port         服務 port（預設 3067）
+  --db-dir       DB 目錄
+  --cleanup-all  清除所有 Docker 資源
 EOF
-      exit 0
-      ;;
+      exit 0 ;;
     *)
-      echo "❌ 未知參數：$1"
-      exit 1
-      ;;
+      echo "❌ 未知參數：$1"; exit 1 ;;
   esac
 done
 
 FULL_IMAGE="$IMAGE:$VERSION"
 
-echo "📌 Version:         $VERSION"
-echo "📌 Container Name:  $CONTAINER_NAME"
-echo "📌 Port:            $HOST_PORT"
-echo "📌 Host DB Path:    $DB_DIR"
-echo "📌 Clean All:       $CLEAN_ALL"
+echo ""
+echo "📌 Version:   $VERSION"
+echo "📌 DB Path:   $DB_DIR"
+echo "📌 Container: $CONTAINER_NAME"
 echo ""
 
-# ---------- 安裝 Docker（如果還沒裝） ----------
+# ---------------------------------------------------------
+# 安裝 Docker
+# ---------------------------------------------------------
 if ! command -v docker >/dev/null 2>&1; then
-  echo "🐳 未找到 docker，開始安裝..."
-  if command -v apt-get >/dev/null 2>&1; then
-    apt-get update -y
-    apt-get install -y docker.io
-    systemctl enable docker --now || true
-  else
-    echo "❌ 找不到 apt-get，請先手動安裝 Docker 後再執行本腳本。"
-    exit 1
-  fi
+  echo "🐳 docker 未安裝，開始安裝..."
+  apt-get update -y
+  apt-get install -y docker.io
+  systemctl enable docker --now || true
 else
-  echo "✔ Docker 已安裝。"
+  echo "✔ docker 已安裝"
 fi
 
-# ----------（選用）清理舊 Docker 資源 ----------
+# ---------------------------------------------------------
+# 清理舊 Docker
+# ---------------------------------------------------------
 if [[ "$CLEAN_ALL" == true ]]; then
-  echo ""
-  echo "⚠️ 啟動『全部清理』模式：會停止並移除所有 Docker 容器、清除不用的 image / volume。"
-  echo "   如果這台機器上有其他專案在用 Docker，請不要加 --cleanup-all。"
-  echo ""
-
-  if [ -n "$(docker ps -q)" ]; then
-    echo "🛑 停止所有容器..."
-    docker stop $(docker ps -q) || true
-  fi
-
-  if [ -n "$(docker ps -aq)" ]; then
-    echo "🧹 移除所有容器..."
-    docker rm $(docker ps -aq) || true
-  fi
-
-  echo "🧼 docker system prune -a ..."
+  echo "🧹 清除所有舊 Docker 資源..."
+  docker stop $(docker ps -q) || true
+  docker rm $(docker ps -aq) || true
   docker system prune -af || true
-
-  echo "🧽 docker volume prune ..."
   docker volume prune -f || true
+fi
 
-  echo "✅ Docker 舊資源已清理完畢。"
+# ---------------------------------------------------------
+# 判斷是否為真·Linux 伺服器
+# ---------------------------------------------------------
+IS_SERVER=false
+if [[ "$IS_LOCAL_DESKTOP" == false ]]; then
+  IS_SERVER=true
+fi
+
+# ---------------------------------------------------------
+# 伺服器模式：使用 docker-compose.prod.yml + Caddy + HTTPS
+# ---------------------------------------------------------
+if [[ "$IS_SERVER" == true ]]; then
+  echo "🖥 偵測到 Linux 伺服器，啟動正式部署模式（docker-compose.prod.yml + Caddy）"
+
+  APP_DIR="/opt/xtoolbot-client"
+
+  if [[ ! -d "$APP_DIR" ]]; then
+    echo "📥 下載 xtoolbot-client 程式碼..."
+    git clone https://github.com/xtoolbot-dev/xtoolbot-client.git "$APP_DIR"
+  fi
+
+  cd "$APP_DIR"
+
+  echo "📦 拉取最新 image..."
+  docker compose -f docker-compose.prod.yml pull || true
+
+  echo "🐳 啟動 docker-compose.prod.yml（含 HTTPS）..."
+  docker compose -f docker-compose.prod.yml up -d
+
   echo ""
+  echo "🎉 部署完成！"
+  echo "➡ 請把你的 domain 指向此伺服器 IP"
+  echo "➡ Cloudflare 必須灰雲"
+  echo "➡ 然後在 UI 裡填：https://your-bot-domain.com"
+  echo ""
+  exit 0
 fi
 
-# ---------- 準備 DB 目錄 ----------
-if [[ ! -d "$DB_DIR" ]]; then
-  echo "📁 建立 DB 目錄：$DB_DIR"
-  mkdir -p "$DB_DIR"
-fi
+# ---------------------------------------------------------
+# 本地桌面模式 → 單容器直接跑
+# ---------------------------------------------------------
 
-# ⭐ 確保容器裡的非 root user 也能寫入 DB（避免 SQLITE_CANTOPEN）
+echo "💻 偵測到本地環境（Mac / Windows / WSL），啟動單容器模式"
+
+if [[ ! -d "$DB_DIR" ]]; then mkdir -p "$DB_DIR"; fi
 chmod 777 "$DB_DIR" || true
 
-# ---------- 拉 image ----------
-echo "📦 拉取 image：$FULL_IMAGE"
 docker pull "$FULL_IMAGE"
 
-# ---------- 停舊容器（同名） ----------
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}\$"; then
-  echo "🛑 停止舊容器 ${CONTAINER_NAME}..."
   docker stop "$CONTAINER_NAME" || true
-  echo "🧹 移除舊容器 ${CONTAINER_NAME}..."
   docker rm "$CONTAINER_NAME" || true
 fi
 
-# ---------- 計算主機 IP，給 SERVER_URL 用 ----------
-if [[ "$IS_LOCAL_DESKTOP" == true ]]; then
-  # 本地（mac / win / WSL）：一律使用 localhost，避免出現奇怪的 hostname 域名
-  SERVER_IP="localhost"
-else
-  # Linux 伺服器：盡量抓第一個 IP
-  if hostname -I >/dev/null 2>&1; then
-    SERVER_IP=$(hostname -I | awk '{print $1}')
-  else
-    SERVER_IP=$(hostname 2>/dev/null || echo "localhost")
-  fi
-fi
-
+SERVER_IP="localhost"
 SERVER_URL="http://${SERVER_IP}:${HOST_PORT}"
-echo "🌐 SERVER_URL 將設為：${SERVER_URL}"
 
-# ---------- 跑新容器 ----------
-echo "🐳 啟動 SchedulerBot 容器..."
 docker run -d \
   --name "$CONTAINER_NAME" \
   -p "${HOST_PORT}:3067" \
@@ -206,7 +169,6 @@ docker run -d \
   "$FULL_IMAGE"
 
 echo ""
-echo "🎉 安裝完成！"
-echo "➡ 在這台機器上，請打開瀏覽器： http://localhost:${HOST_PORT}"
-echo "➡ 如果是遠端伺服器，可用：   http://${SERVER_IP}:${HOST_PORT}"
+echo "🎉 已啟動 SchedulerBot！"
+echo "➡ http://localhost:${HOST_PORT}"
 echo ""
