@@ -113,8 +113,14 @@ services:
       - PORT=3067
       - TZ=Asia/Taipei
       - DB_DIR=${INTERNAL_DB_DIR}
+      # 🔑 這三個是給「自動域名切換 + Caddy reload」用的
+      - CADDYFILE_PATH=/app/Caddyfile
+      - CADDY_ADMIN_URL=http://schedulerbot-caddy:2019/load
+      - TLS_EMAIL=admin@xtoolbot.com
     volumes:
       - ${DB_DIR}:${INTERNAL_DB_DIR}
+      # 🟡 關鍵：讓後端也看到同一份 Caddyfile
+      - ./Caddyfile:/app/Caddyfile
 
   schedulerbot-caddy:
     image: caddy:2-alpine
