@@ -99,8 +99,8 @@ if [[ "$IS_LOCAL_DESKTOP" == false ]]; then
   mkdir -p "$INSTALL_PATH"
   cd "$INSTALL_PATH"
 
-echo "📥 建立 docker-compose.prod.yml…"
-cat > docker-compose.prod.yml <<EOF
+  echo "📥 建立 docker-compose.prod.yml…"
+  cat > docker-compose.prod.yml <<EOF
 version: "3.8"
 
 services:
@@ -137,14 +137,18 @@ services:
       - ./caddy_config:/config
 EOF
 
-echo "📥 建立 Caddyfile（初始 HTTP 反代）…"
-cat > Caddyfile <<EOF
+  echo "📥 建立 Caddyfile（初始 HTTP 佔位，不轉發到 app）…"
+  cat > Caddyfile <<EOF
 :80 {
-  reverse_proxy schedulerbot:3067
+  respond "SchedulerBot is installed. Please open http://{host}:3067 to configure domain." 200
 }
 EOF
+  # ⭐ 上面這裡是關鍵修改：
+  #   - 不再 reverse_proxy 到 schedulerbot
+  #   - 只是回一行提示文字
+  #   這樣 http://IP 不是正式入口，真正入口是 http://IP:3067
 
-  # 🔥 新增：如果本機已經有舊的 schedulerbot / schedulerbot-caddy，就先砍掉
+  # 🔥 如果本機已經有舊的 schedulerbot / schedulerbot-caddy，就先砍掉
   if docker ps -a --format '{{.Names}}' | grep -q '^schedulerbot$'; then
     echo "🧹 發現舊的 schedulerbot 容器，先移除..."
     docker rm -f schedulerbot || true
@@ -192,12 +196,12 @@ EOF
   echo "🎉 部署完成（正式伺服器模式）"
   echo "🔗 之後請在 System Settings 裡設定 Server URL：你的域名（例如 https://mybot.xtoolbot.com）"
 
-  # ⭐ 新增：顯示目前可直接登入的 IP 登入網址
+  # ⭐ 這裡也改一下提示，加上 :3067
   PUBLIC_IP=$(curl -s https://api.ipify.org || echo "")
   if [[ -n "$PUBLIC_IP" ]]; then
     echo ""
     echo "💡 首次登入請在瀏覽器開啟："
-    echo "   👉 http://$PUBLIC_IP"
+    echo "   👉 http://$PUBLIC_IP:3067"
     echo "   （之後設定好網域與 HTTPS 後，請改用你的網域登入）"
   fi
 
