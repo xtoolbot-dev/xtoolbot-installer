@@ -144,19 +144,36 @@ EOF
 
   echo "🚀 啟動正式部署 docker-compose.prod.yml…"
 
-  # ✅ 正確偵測 docker compose / docker-compose
+  # ✅ 先嘗試 docker compose
   if docker compose version >/dev/null 2>&1; then
     docker compose -f docker-compose.prod.yml up -d
+
+  # ✅ 再嘗試舊版 docker-compose
   elif command -v docker-compose >/dev/null 2>&1; then
     docker-compose -f docker-compose.prod.yml up -d
+
+  # ✅ 兩個都沒有，就自動用 apt-get 安裝 docker-compose-plugin，然後再試一次
+  elif command -v apt-get >/dev/null 2>&1; then
+    echo "🔧 找不到 docker compose / docker-compose，嘗試安裝 docker-compose-plugin..."
+    apt-get update -y
+    apt-get install -y docker-compose-plugin
+
+    if docker compose version >/dev/null 2>&1; then
+      echo "✔ docker-compose-plugin 安裝完成，啟動服務..."
+      docker compose -f docker-compose.prod.yml up -d
+    else
+      echo "❌ 已嘗試安裝 docker-compose-plugin，但仍找不到 'docker compose'。"
+      echo "   請手動安裝 docker-compose 後再執行本安裝腳本。"
+      exit 1
+    fi
   else
-    echo "❌ 找不到 'docker compose' 或 'docker-compose'，請先安裝 docker-compose 後再重試。"
+    echo "❌ 找不到 'docker compose' 或 'docker-compose'，且系統沒有 apt-get 可安裝插件。"
     exit 1
   fi
 
   echo ""
   echo "🎉 部署完成（正式伺服器模式）"
-  echo "🔗 請前往前台設定 Server URL：你的域名（例如 https://mybot.xtoolbot.com）"
+  echo "🔗 之後請在 System Settings 裡設定 Server URL：你的域名（例如 https://mybot.xtoolbot.com）"
   echo ""
   exit 0
 fi
