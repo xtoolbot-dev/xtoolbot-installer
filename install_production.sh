@@ -193,10 +193,10 @@ EOF
 
   # ⭐ 新增：顯示目前可直接登入的 IP 登入網址
   PUBLIC_IP=$(curl -s https://api.ipify.org || echo "")
-  if [[ -n "\$PUBLIC_IP" ]]; then
+  if [[ -n "$PUBLIC_IP" ]]; then
     echo ""
     echo "💡 首次登入請在瀏覽器開啟："
-    echo "   👉 http://\$PUBLIC_IP"
+    echo "   👉 http://$PUBLIC_IP"
     echo "   （之後設定好網域與 HTTPS 後，請改用你的網域登入）"
   fi
 
