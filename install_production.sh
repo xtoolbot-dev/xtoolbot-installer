@@ -4,7 +4,7 @@ set -euo pipefail
 echo ""
 echo "==============================="
 echo "🚀 SchedulerBot Installer"
-echo "==============================="
+===============================
 echo ""
 
 # -----------------------------
@@ -42,16 +42,11 @@ CLEAN_ALL=false
 # -----------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --version|-v)
-      VERSION="$2"; shift 2;;
-    --token)
-      TOKEN="$2"; shift 2;;
-    --port)
-      HOST_PORT="$2"; shift 2;;
-    --db-dir)
-      DB_DIR="$2"; shift 2;;
-    --cleanup-all|--cleanup)
-      CLEAN_ALL=true; shift 1;;
+    --version|-v) VERSION="$2"; shift 2;;
+    --token) TOKEN="$2"; shift 2;;
+    --port) HOST_PORT="$2"; shift 2;;
+    --db-dir) DB_DIR="$2"; shift 2;;
+    --cleanup-all|--cleanup) CLEAN_ALL=true; shift 1;;
     --help|-h)
       echo "用法略…"; exit 0;;
     *)
@@ -142,24 +137,29 @@ EOF
   reverse_proxy schedulerbot:3067
 }
 :443 {
-  tls your@email.com
+  tls you@email.com
   reverse_proxy schedulerbot:3067
 }
 EOF
 
   echo "🚀 啟動正式部署 docker-compose.prod.yml…"
-  docker compose -f docker-compose.prod.yml up -d
+
+  # 新增：自動偵測 docker compose / docker-compose
+  if command -v docker compose >/dev/null 2>&1; then
+    docker compose -f docker-compose.prod.yml up -d
+  else
+    docker-compose -f docker-compose.prod.yml up -d
+  fi
 
   echo ""
   echo "🎉 部署完成（正式伺服器模式）"
-  echo "🔗 請前往前台設定 Server URL："
-  echo "    https://your-domain.com"
+  echo "🔗 請前往前台設定 Server URL：你的域名（例如 https://mybot.xtoolbot.com）"
   echo ""
   exit 0
 fi
 
 # -----------------------------
-# 本地 dev 模式（你的原本邏輯）
+# 本地 dev 模式（保持原邏輯）
 # -----------------------------
 echo "🧪 本地桌面環境（dev 模式），啟動 docker run"
 
