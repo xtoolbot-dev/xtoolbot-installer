@@ -108,25 +108,23 @@ services:
     image: ${FULL_IMAGE}
     container_name: schedulerbot
     restart: unless-stopped
+    ports:
+      - "3067:3067"           # ⭐ 對外開 3067，當保底入口
     environment:
       - NODE_ENV=production
       - PORT=3067
       - TZ=Asia/Taipei
       - DB_DIR=${INTERNAL_DB_DIR}
-      # 👇 告訴 Node：Caddyfile 真正位置（跟下面 volume 對齊）
       - CADDYFILE_PATH=/opt/xtoolbot-server/Caddyfile
-      # 👇 告訴 Node：Caddy Admin API 的位置（其實跟預設一樣，但寫死比較直覺）
       - CADDY_ADMIN_URL=http://schedulerbot-caddy:2019/load
     volumes:
       - ${DB_DIR}:${INTERNAL_DB_DIR}
-      # 👇 把 host 上的 Caddyfile 掛進來，讓 Node 可以改（這個 path 要跟上面的 CADDYFILE_PATH 一致）
       - ./Caddyfile:/opt/xtoolbot-server/Caddyfile
 
   schedulerbot-caddy:
     image: caddy:2-alpine
     container_name: schedulerbot-caddy
     restart: unless-stopped
-    # 👇 讓 Caddy 監看 Caddyfile，有變更會自動 reload
     command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"]
     ports:
       - "80:80"
@@ -134,13 +132,10 @@ services:
     depends_on:
       - schedulerbot
     volumes:
-      # 👇 Caddy 用的 Caddyfile，跟 schedulerbot 共用同一個 host 檔案
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./caddy_data:/data
       - ./caddy_config:/config
 EOF
-
-
 
 echo "📥 建立 Caddyfile（初始 HTTP 反代）…"
 cat > Caddyfile <<EOF
