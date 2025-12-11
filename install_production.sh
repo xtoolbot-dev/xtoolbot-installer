@@ -144,26 +144,34 @@ EOF
 
   echo "🚀 啟動正式部署 docker-compose.prod.yml…"
 
-  # ✅ 先嘗試 docker compose
+  # ✅ 1. 先試 docker compose（plugin 方式）
   if docker compose version >/dev/null 2>&1; then
     docker compose -f docker-compose.prod.yml up -d
 
-  # ✅ 再嘗試舊版 docker-compose
+  # ✅ 2. 再試舊的 docker-compose binary
   elif command -v docker-compose >/dev/null 2>&1; then
     docker-compose -f docker-compose.prod.yml up -d
 
-  # ✅ 兩個都沒有，就自動用 apt-get 安裝 docker-compose-plugin，然後再試一次
+  # ✅ 3. 兩個都沒有，嘗試用 apt 安裝（先 plugin，再舊版）
   elif command -v apt-get >/dev/null 2>&1; then
-    echo "🔧 找不到 docker compose / docker-compose，嘗試安裝 docker-compose-plugin..."
-    apt-get update -y
-    apt-get install -y docker-compose-plugin
+    echo "🔧 找不到 docker compose / docker-compose，嘗試安裝 docker-compose-plugin 或 docker-compose..."
 
-    if docker compose version >/dev/null 2>&1; then
-      echo "✔ docker-compose-plugin 安裝完成，啟動服務..."
+    apt-get update -y
+
+    # 先試新版 plugin
+    if apt-get install -y docker-compose-plugin >/dev/null 2>&1; then
+      echo "✔ 安裝 docker-compose-plugin 成功，使用 docker compose 啟動服務..."
+      docker compose version >/dev/null 2>&1 || { echo "❌ docker compose 仍不可用"; exit 1; }
       docker compose -f docker-compose.prod.yml up -d
+
+    # 再試舊版 docker-compose 套件
+    elif apt-get install -y docker-compose >/dev/null 2>&1; then
+      echo "✔ 安裝 docker-compose 成功，使用 docker-compose 啟動服務..."
+      docker-compose -f docker-compose.prod.yml up -d
+
     else
-      echo "❌ 已嘗試安裝 docker-compose-plugin，但仍找不到 'docker compose'。"
-      echo "   請手動安裝 docker-compose 後再執行本安裝腳本。"
+      echo "❌ 無法透過 apt 安裝 docker-compose-plugin 或 docker-compose。"
+      echo "   請手動安裝 compose 後再執行本安裝腳本。"
       exit 1
     fi
   else
