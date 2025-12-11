@@ -144,11 +144,14 @@ EOF
 
   echo "🚀 啟動正式部署 docker-compose.prod.yml…"
 
-  # 新增：自動偵測 docker compose / docker-compose
-  if command -v docker compose >/dev/null 2>&1; then
+  # ✅ 正確偵測 docker compose / docker-compose
+  if docker compose version >/dev/null 2>&1; then
     docker compose -f docker-compose.prod.yml up -d
-  else
+  elif command -v docker-compose >/dev/null 2>&1; then
     docker-compose -f docker-compose.prod.yml up -d
+  else
+    echo "❌ 找不到 'docker compose' 或 'docker-compose'，請先安裝 docker-compose 後再重試。"
+    exit 1
   fi
 
   echo ""
