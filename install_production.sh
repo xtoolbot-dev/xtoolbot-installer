@@ -99,8 +99,8 @@ if [[ "$IS_LOCAL_DESKTOP" == false ]]; then
   mkdir -p "$INSTALL_PATH"
   cd "$INSTALL_PATH"
 
-  echo "📥 建立 docker-compose.prod.yml…"
-  cat > docker-compose.prod.yml <<EOF
+echo "📥 建立 docker-compose.prod.yml…"
+cat > docker-compose.prod.yml <<EOF
 version: "3.8"
 
 services:
@@ -113,37 +113,32 @@ services:
       - PORT=3067
       - TZ=Asia/Taipei
       - DB_DIR=${INTERNAL_DB_DIR}
-      # 🔑 這三個是給「自動域名切換 + Caddy reload」用的
-      - CADDYFILE_PATH=/app/Caddyfile
-      - CADDY_ADMIN_URL=http://schedulerbot-caddy:2019/load
-      - TLS_EMAIL=admin@xtoolbot.com
     volumes:
       - ${DB_DIR}:${INTERNAL_DB_DIR}
-      # 🟡 關鍵：讓後端也看到同一份 Caddyfile
-      - ./Caddyfile:/app/Caddyfile
+      # 👇 新增：把 host 上的 Caddyfile 掛進來，讓 Node 可以改
+      - ./Caddyfile:/opt/xtoolbot-server/Caddyfile
 
   schedulerbot-caddy:
     image: caddy:2-alpine
     container_name: schedulerbot-caddy
     restart: unless-stopped
+    # 👇 新增：讓 Caddy 監看 Caddyfile，自動 reload
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"]
     ports:
       - "80:80"
       - "443:443"
     depends_on:
       - schedulerbot
     volumes:
+      # 👇 這個是 Caddy 用的 Caddyfile（同一個檔案）
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./caddy_data:/data
       - ./caddy_config:/config
 EOF
 
-  echo "📥 建立 Caddyfile（自動 HTTPS）…"
-  cat > Caddyfile <<EOF
+echo "📥 建立 Caddyfile（初始 HTTP 反代）…"
+cat > Caddyfile <<EOF
 :80 {
-  reverse_proxy schedulerbot:3067
-}
-:443 {
-  tls you@email.com
   reverse_proxy schedulerbot:3067
 }
 EOF
