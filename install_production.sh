@@ -99,8 +99,8 @@ if [[ "$IS_LOCAL_DESKTOP" == false ]]; then
   mkdir -p "$INSTALL_PATH"
   cd "$INSTALL_PATH"
 
-echo "📥 建立 docker-compose.prod.yml…"
-cat > docker-compose.prod.yml <<EOF
+  echo "📥 建立 docker-compose.prod.yml…"
+  cat > docker-compose.prod.yml <<EOF
 version: "3.8"
 
 services:
@@ -115,26 +115,24 @@ services:
       - DB_DIR=${INTERNAL_DB_DIR}
     volumes:
       - ${DB_DIR}:${INTERNAL_DB_DIR}
-      # 👇 新增：把 host 上的 Caddyfile 掛進來，讓 Node 可以改
-      - ./Caddyfile:/opt/xtoolbot-server/Caddyfile
+    ports:
+      - "3067:3067"          # ⭐ 永遠開放 IP:3067 作為後門入口
 
   schedulerbot-caddy:
     image: caddy:2-alpine
     container_name: schedulerbot-caddy
     restart: unless-stopped
-    # 👇 新增：讓 Caddy 監看 Caddyfile，自動 reload
-    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile", "--watch"]
     ports:
       - "80:80"
       - "443:443"
     depends_on:
       - schedulerbot
     volumes:
-      # 👇 這個是 Caddy 用的 Caddyfile（同一個檔案）
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./caddy_data:/data
       - ./caddy_config:/config
 EOF
+
 
 echo "📥 建立 Caddyfile（初始 HTTP 反代）…"
 cat > Caddyfile <<EOF
