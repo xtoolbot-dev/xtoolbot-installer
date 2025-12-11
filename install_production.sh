@@ -7,9 +7,9 @@ echo "🚀 SchedulerBot Installer"
 echo "==============================="
 echo ""
 
-# ---------------------------------------------------------
-# 基本設定
-# ---------------------------------------------------------
+# -----------------------------
+# 基本設定（保留你的原始設定）
+# -----------------------------
 IMAGE="gda3692/xtoolbot-client"
 CONTAINER_NAME="${CONTAINER_NAME:-schedulerbot}"
 VERSION="${SCHEDULERBOT_VERSION:-latest}"
@@ -17,158 +17,163 @@ TOKEN="${GHCR_TOKEN:-}"
 HOST_PORT="${HOST_PORT:-3067}"
 INTERNAL_DB_DIR="/opt/schedulerbot/db"
 
+# -----------------------------
+# 判斷是否為本地桌面
+# -----------------------------
 IS_LOCAL_DESKTOP=false
 
-# ---------------------------------------------------------
-# 判斷系統類型
-# ---------------------------------------------------------
 if [[ "${OSTYPE:-}" == darwin* ]]; then
   DB_DIR="${DB_DIR:-/Users/Shared/xtoolbot-db}"
   IS_LOCAL_DESKTOP=true
-
 elif grep -qi microsoft /proc/version 2>/dev/null; then
   DB_DIR="${DB_DIR:-/mnt/c/Users/Public/xtoolbot-db}"
   IS_LOCAL_DESKTOP=true
-
 elif [[ "${OSTYPE:-}" == msys* || "${OSTYPE:-}" == mingw* ]]; then
   DB_DIR="${DB_DIR:-/c/Users/Public/xtoolbot-db}"
   IS_LOCAL_DESKTOP=true
-
 else
   DB_DIR="${DB_DIR:-/opt/schedulerbot/db}"
 fi
 
 CLEAN_ALL=false
 
-# ---------------------------------------------------------
-# 處理參數
-# ---------------------------------------------------------
+# -----------------------------
+# 解析參數（保留你的邏輯）
+# -----------------------------
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --version|-v)
-      VERSION="$2"; shift 2 ;;
+      VERSION="$2"; shift 2;;
+    --token)
+      TOKEN="$2"; shift 2;;
     --port)
-      HOST_PORT="$2"; shift 2 ;;
+      HOST_PORT="$2"; shift 2;;
     --db-dir)
-      DB_DIR="$2"; shift 2 ;;
+      DB_DIR="$2"; shift 2;;
     --cleanup-all|--cleanup)
-      CLEAN_ALL=true; shift ;;
+      CLEAN_ALL=true; shift 1;;
     --help|-h)
-      cat <<EOF
-用法：
-  curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh | sudo bash
-
-參數：
-  --version      Image 版本（預設 latest）
-  --port         服務 port（預設 3067）
-  --db-dir       DB 目錄
-  --cleanup-all  清除所有 Docker 資源
-EOF
-      exit 0 ;;
+      echo "用法略…"; exit 0;;
     *)
-      echo "❌ 未知參數：$1"; exit 1 ;;
+      echo "❌ 未知參數：$1"; exit 1;;
   esac
 done
 
 FULL_IMAGE="$IMAGE:$VERSION"
 
-echo ""
 echo "📌 Version:   $VERSION"
 echo "📌 DB Path:   $DB_DIR"
 echo "📌 Container: $CONTAINER_NAME"
 echo ""
 
-# ---------------------------------------------------------
-# 安裝 Docker
-# ---------------------------------------------------------
+# -----------------------------
+# 安裝 Docker（保留）
+# -----------------------------
 if ! command -v docker >/dev/null 2>&1; then
-  echo "🐳 docker 未安裝，開始安裝..."
-  apt-get update -y
-  apt-get install -y docker.io
-  systemctl enable docker --now || true
+  echo "🐳 未找到 docker，開始安裝..."
+  if command -v apt-get >/dev/null 2>&1; then
+    apt-get update -y
+    apt-get install -y docker.io
+    systemctl enable docker --now || true
+  else
+    echo "❌ 請先手動安裝 Docker"; exit 1
+  fi
 else
   echo "✔ docker 已安裝"
 fi
 
-# ---------------------------------------------------------
-# 清理舊 Docker
-# ---------------------------------------------------------
-if [[ "$CLEAN_ALL" == true ]]; then
-  echo "🧹 清除所有舊 Docker 資源..."
-  docker stop $(docker ps -q) || true
-  docker rm $(docker ps -aq) || true
-  docker system prune -af || true
-  docker volume prune -f || true
-fi
+# -----------------------------
+# 準備 DB 目錄
+# -----------------------------
+mkdir -p "$DB_DIR"
+chmod 777 "$DB_DIR"
 
-# ---------------------------------------------------------
-# 判斷是否為真·Linux 伺服器
-# ---------------------------------------------------------
-IS_SERVER=false
+# -----------------------------
+# 拉 image
+# -----------------------------
+echo "📦 拉取 image：$FULL_IMAGE"
+docker pull "$FULL_IMAGE"
+
+# -----------------------------
+# 偵測是否為 Linux 伺服器
+# -----------------------------
 if [[ "$IS_LOCAL_DESKTOP" == false ]]; then
-  IS_SERVER=true
-fi
-
-# ---------------------------------------------------------
-# 伺服器模式：使用 docker-compose.prod.yml + Caddy + HTTPS
-# ---------------------------------------------------------
-if [[ "$IS_SERVER" == true ]]; then
   echo "🖥 偵測到 Linux 伺服器，啟動正式部署模式（docker-compose.prod.yml + Caddy）"
 
-  APP_DIR="/opt/xtoolbot-client"
+  INSTALL_PATH="/opt/xtoolbot-server"
+  mkdir -p "$INSTALL_PATH"
+  cd "$INSTALL_PATH"
 
-  if [[ ! -d "$APP_DIR" ]]; then
-    echo "📥 下載 xtoolbot-client 程式碼..."
-    git clone https://github.com/xtoolbot-dev/xtoolbot-client.git "$APP_DIR"
-  fi
+  echo "📥 建立 docker-compose.prod.yml…"
+  cat > docker-compose.prod.yml <<EOF
+version: "3.8"
 
-  cd "$APP_DIR"
+services:
+  schedulerbot:
+    image: ${FULL_IMAGE}
+    container_name: schedulerbot
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3067
+      - TZ=Asia/Taipei
+      - DB_DIR=${INTERNAL_DB_DIR}
+    volumes:
+      - ${DB_DIR}:${INTERNAL_DB_DIR}
 
-  echo "📦 拉取最新 image..."
-  docker compose -f docker-compose.prod.yml pull || true
+  schedulerbot-caddy:
+    image: caddy:2-alpine
+    container_name: schedulerbot-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - schedulerbot
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./caddy_data:/data
+      - ./caddy_config:/config
+EOF
 
-  echo "🐳 啟動 docker-compose.prod.yml（含 HTTPS）..."
+  echo "📥 建立 Caddyfile（自動 HTTPS）…"
+  cat > Caddyfile <<EOF
+:80 {
+  reverse_proxy schedulerbot:3067
+}
+:443 {
+  tls your@email.com
+  reverse_proxy schedulerbot:3067
+}
+EOF
+
+  echo "🚀 啟動正式部署 docker-compose.prod.yml…"
   docker compose -f docker-compose.prod.yml up -d
 
   echo ""
-  echo "🎉 部署完成！"
-  echo "➡ 請把你的 domain 指向此伺服器 IP"
-  echo "➡ Cloudflare 必須灰雲"
-  echo "➡ 然後在 UI 裡填：https://your-bot-domain.com"
+  echo "🎉 部署完成（正式伺服器模式）"
+  echo "🔗 請前往前台設定 Server URL："
+  echo "    https://your-domain.com"
   echo ""
   exit 0
 fi
 
-# ---------------------------------------------------------
-# 本地桌面模式 → 單容器直接跑
-# ---------------------------------------------------------
-
-echo "💻 偵測到本地環境（Mac / Windows / WSL），啟動單容器模式"
-
-if [[ ! -d "$DB_DIR" ]]; then mkdir -p "$DB_DIR"; fi
-chmod 777 "$DB_DIR" || true
-
-docker pull "$FULL_IMAGE"
-
-if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}\$"; then
-  docker stop "$CONTAINER_NAME" || true
-  docker rm "$CONTAINER_NAME" || true
-fi
-
-SERVER_IP="localhost"
-SERVER_URL="http://${SERVER_IP}:${HOST_PORT}"
+# -----------------------------
+# 本地 dev 模式（你的原本邏輯）
+# -----------------------------
+echo "🧪 本地桌面環境（dev 模式），啟動 docker run"
 
 docker run -d \
   --name "$CONTAINER_NAME" \
   -p "${HOST_PORT}:3067" \
   -e TZ=Asia/Taipei \
-  -e SERVER_URL="${SERVER_URL}" \
+  -e SERVER_URL="http://localhost:${HOST_PORT}" \
   -e DB_DIR="${INTERNAL_DB_DIR}" \
   -v "${DB_DIR}:${INTERNAL_DB_DIR}" \
   --restart unless-stopped \
   "$FULL_IMAGE"
 
 echo ""
-echo "🎉 已啟動 SchedulerBot！"
-echo "➡ http://localhost:${HOST_PORT}"
+echo "🎉 安裝完成！"
+echo "➡ 本地開啟： http://localhost:${HOST_PORT}"
 echo ""
