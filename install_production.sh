@@ -142,6 +142,17 @@ EOF
 }
 EOF
 
+  # 🔥 新增：如果本機已經有舊的 schedulerbot / schedulerbot-caddy，就先砍掉
+  if docker ps -a --format '{{.Names}}' | grep -q '^schedulerbot$'; then
+    echo "🧹 發現舊的 schedulerbot 容器，先移除..."
+    docker rm -f schedulerbot || true
+  fi
+
+  if docker ps -a --format '{{.Names}}' | grep -q '^schedulerbot-caddy$'; then
+    echo "🧹 發現舊的 schedulerbot-caddy 容器，先移除..."
+    docker rm -f schedulerbot-caddy || true
+  fi
+
   echo "🚀 啟動正式部署 docker-compose.prod.yml…"
 
   # ✅ 1. 先試 docker compose（plugin 方式）
@@ -158,17 +169,13 @@ EOF
 
     apt-get update -y
 
-    # 先試新版 plugin
     if apt-get install -y docker-compose-plugin >/dev/null 2>&1; then
       echo "✔ 安裝 docker-compose-plugin 成功，使用 docker compose 啟動服務..."
       docker compose version >/dev/null 2>&1 || { echo "❌ docker compose 仍不可用"; exit 1; }
       docker compose -f docker-compose.prod.yml up -d
-
-    # 再試舊版 docker-compose 套件
     elif apt-get install -y docker-compose >/dev/null 2>&1; then
       echo "✔ 安裝 docker-compose 成功，使用 docker-compose 啟動服務..."
       docker-compose -f docker-compose.prod.yml up -d
-
     else
       echo "❌ 無法透過 apt 安裝 docker-compose-plugin 或 docker-compose。"
       echo "   請手動安裝 compose 後再執行本安裝腳本。"
