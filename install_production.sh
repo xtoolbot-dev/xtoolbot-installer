@@ -131,16 +131,13 @@ services:
       - ./caddy_config:/config
 EOF
 
-  echo "📥 建立 Caddyfile（自動 HTTPS on-demand）…"
+  echo "📥 建立 Caddyfile（自動 HTTPS）…"
   cat > Caddyfile <<EOF
 :80 {
   reverse_proxy schedulerbot:3067
 }
-
 :443 {
-  tls {
-    on_demand
-  }
+  tls you@email.com
   reverse_proxy schedulerbot:3067
 }
 EOF
