@@ -136,8 +136,11 @@ EOF
 :80 {
   reverse_proxy schedulerbot:3067
 }
+
 :443 {
-  tls you@email.com
+  tls {
+    on_demand
+  }
   reverse_proxy schedulerbot:3067
 }
 EOF
