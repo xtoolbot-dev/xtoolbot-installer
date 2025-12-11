@@ -20,6 +20,9 @@ TOKEN="${GHCR_TOKEN:-}"
 # 對外 port
 HOST_PORT="${HOST_PORT:-3067}"
 
+# ⭐ 容器內固定使用的 DB 路徑（程式一律讀這個）
+INTERNAL_DB_DIR="/opt/schedulerbot/db"
+
 # ⭐ 根據系統判斷預設 DB 目錄（Linux / macOS / WSL / Windows-GitBash）
 if [[ "${OSTYPE:-}" == darwin* ]]; then
   # macOS：放在 /Users/Shared，Docker Desktop 一定允許掛載
@@ -85,7 +88,7 @@ while [[ $# -gt 0 ]]; do
   --port           對外埠號（預設 3067）
   --db-dir         DB 目錄（預設 Linux: /opt/schedulerbot/db，macOS: /Users/Shared/xtoolbot-db，
                    WSL: /mnt/c/Users/Public/xtoolbot-db，Git Bash: /c/Users/Public/xtoolbot-db）
-  --cleanup-all    ⚠️ 停止並刪除所有 Docker 容器 / 不用的 image / volume
+  --cleanup-all    ⚠️ 停止並移除所有 Docker 容器 / 不用的 image / volume
 EOF
       exit 0
       ;;
@@ -101,8 +104,8 @@ FULL_IMAGE="$IMAGE:$VERSION"
 echo "📌 Version:         $VERSION"
 echo "📌 Container Name:  $CONTAINER_NAME"
 echo "📌 Port:            $HOST_PORT"
-echo "📌 DB Path:         $DB_DIR"
-echo "📌 Cleanup All:     $CLEAN_ALL"
+echo "📌 Host DB Path:    $DB_DIR"
+echo "📌 Clean All:       $CLEAN_ALL"
 echo ""
 
 # ---------- 安裝 Docker（如果還沒裝） ----------
@@ -187,13 +190,13 @@ docker run -d \
   -p "${HOST_PORT}:3067" \
   -e TZ=Asia/Taipei \
   -e SERVER_URL="${SERVER_URL}" \
-  -e DB_DIR="${DB_DIR}" \
-  -v "${DB_DIR}:${DB_DIR}" \
+  -e DB_DIR="${INTERNAL_DB_DIR}" \
+  -v "${DB_DIR}:${INTERNAL_DB_DIR}" \
   --restart unless-stopped \
   "$FULL_IMAGE"
 
 echo ""
 echo "🎉 安裝完成！"
-echo "➡ 請在瀏覽器打開：http://${SERVER_IP}:${HOST_PORT}"
-echo "➡ 如果你在同一台電腦上，也可以打：http://localhost:${HOST_PORT}"
+echo "➡ 在這台機器上，請打開瀏覽器： http://localhost:${HOST_PORT}"
+echo "➡ 如果是遠端伺服器，可用：   http://${SERVER_IP}:${HOST_PORT}"
 echo ""
