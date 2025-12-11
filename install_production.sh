@@ -190,6 +190,16 @@ EOF
   echo ""
   echo "🎉 部署完成（正式伺服器模式）"
   echo "🔗 之後請在 System Settings 裡設定 Server URL：你的域名（例如 https://mybot.xtoolbot.com）"
+
+  # ⭐ 新增：顯示目前可直接登入的 IP 登入網址
+  PUBLIC_IP=$(curl -s https://api.ipify.org || echo "")
+  if [[ -n "\$PUBLIC_IP" ]]; then
+    echo ""
+    echo "💡 首次登入請在瀏覽器開啟："
+    echo "   👉 http://\$PUBLIC_IP"
+    echo "   （之後設定好網域與 HTTPS 後，請改用你的網域登入）"
+  fi
+
   echo ""
   exit 0
 fi
