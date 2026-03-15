@@ -160,15 +160,34 @@ EOF
     docker rm -f schedulerbot-caddy || true
   fi
 
+  # 檢測主機上是否已有 Caddy
+  SKIP_CADDY=false
+  if command -v caddy >/dev/null 2>&1; then
+    echo "⚠️ 檢測到主機上已有 Caddy，跳過容器 Caddy"
+    SKIP_CADDY=true
+    # 移除 Caddy 服務
+    if docker ps -a --format '{{.Names}}' | grep -q '^schedulerbot-caddy$'; then
+      docker rm -f schedulerbot-caddy || true
+    fi
+  fi
+
   echo "🚀 啟動正式部署 docker-compose.prod.yml…"
 
   # ✅ 1. 先試 docker compose（plugin 方式）
   if docker compose version >/dev/null 2>&1; then
-    docker compose -f docker-compose.prod.yml up -d
+    if [ "$SKIP_CADDY" = "true" ]; then
+      docker compose -f docker-compose.prod.yml up -d schedulerbot
+    else
+      docker compose -f docker-compose.prod.yml up -d
+    fi
 
   # ✅ 2. 再試舊的 docker-compose binary
   elif command -v docker-compose >/dev/null 2>&1; then
-    docker-compose -f docker-compose.prod.yml up -d
+    if [ "$SKIP_CADDY" = "true" ]; then
+      docker-compose -f docker-compose.prod.yml up -d schedulerbot
+    else
+      docker-compose -f docker-compose.prod.yml up -d
+    fi
 
   # ✅ 3. 兩個都沒有，嘗試用 apt 安裝（先 plugin，再舊版）
   elif command -v apt-get >/dev/null 2>&1; then
