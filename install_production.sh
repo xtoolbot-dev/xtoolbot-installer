@@ -244,3 +244,26 @@ echo "📦 在容器内启动升级服务..."
 docker exec schedulerbot node /app/upgrade-service.js > /tmp/upgrade.log 2>&1 &
 
 echo "✅ 升级服务已安装 (端口 3068)"
+
+# ====== Host Upgrade Service ======
+echo "📦 Installing host upgrade service..."
+
+# Install Node.js if needed
+if ! command -v node >/dev/null 2>&1; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+fi
+
+# Install PM2 if needed
+if ! command -v pm2 >/dev/null 2>&1; then
+    sudo npm install -g pm2
+fi
+
+# Download and start upgrade service
+curl -sL https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-host.js -o /opt/xtoolbot-upgrade.js
+cd /opt
+pm2 delete xtoolbot-upgrade 2>/dev/null || true
+pm2 start /opt/xtoolbot-upgrade.js --name xtoolbot-upgrade
+pm2 save
+
+echo "✅ Host upgrade service installed (port 3068)"
