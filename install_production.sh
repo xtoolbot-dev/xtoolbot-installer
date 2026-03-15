@@ -234,29 +234,55 @@ echo ""
 
 # ====== Host Upgrade Service (自动安装) ======
 echo ""
-echo "Installing host upgrade service..."
+echo "======================================"
+echo "🚀 Installing host upgrade service..."
+echo "======================================"
 
-# Install Node.js if needed
+# Install Node.js
 if ! command -v node >/dev/null 2>&1; then
-    echo "Installing Node.js..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+    echo "📦 Installing Node.js..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - || true
+    sudo apt-get install -y nodejs || true
 fi
+node -v && echo "✅ Node.js installed"
 
-# Install PM2 if needed  
+# Install PM2
 if ! command -v pm2 >/dev/null 2>&1; then
-    echo "Installing PM2..."
-    sudo npm install -g pm2
+    echo "📦 Installing PM2..."
+    sudo npm install -g pm2 || true
 fi
+pm2 -v && echo "✅ PM2 installed"
+
+# Download upgrade service
+echo "📥 Downloading upgrade service..."
+sudo curl -sL https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-host.js -o /opt/xtoolbot-upgrade.js || {
+    echo "❌ Failed to download upgrade service"
+    exit 1
+}
 
 # Start upgrade service
-echo "Starting upgrade service..."
-curl -sL https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-host.js -o /opt/xtoolbot-upgrade.js
+echo "🚀 Starting upgrade service..."
 cd /opt
-pm2 delete xtoolbot-upgrade 2>/dev/null || true
-pm2 start /opt/xtoolbot-upgrade.js --name xtoolbot-upgrade
-pm2 save
+sudo pm2 delete xtoolbot-upgrade 2>/dev/null || true
+sudo pm2 start /opt/xtoolbot-upgrade.js --name xtoolbot-upgrade || {
+    echo "❌ Failed to start upgrade service"
+    exit 1
+}
+sudo pm2 save || true
 
 # Test
-sleep 2
-curl -s http://localhost:3068/health && echo " ✅ Upgrade service OK" || echo " ⚠️ Upgrade service failed"
+sleep 3
+echo "🔍 Testing upgrade service..."
+if curl -s http://localhost:3068/health >/dev/null; then
+    echo "✅ Upgrade service is running on port 3068"
+else
+    echo "❌ Upgrade service failed to start!"
+    echo "📋 Checking PM2 logs..."
+    sudo pm2 logs xtoolbot-upgrade --lines 5 --nostream || true
+    exit 1
+fi
+
+echo ""
+echo "======================================"
+echo "✅ ALL DONE! Upgrade service ready"
+echo "======================================"
