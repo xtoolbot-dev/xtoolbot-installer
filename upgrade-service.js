@@ -11,7 +11,8 @@ const server = http.createServer((req, res) => {
     const command = `
       docker stop schedulerbot schedulerbot-caddy 2>/dev/null
       docker rm schedulerbot schedulerbot-caddy 2>/dev/null
-      curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh | sudo bash
+      docker pull gda3692/xtoolbot-client:latest
+      docker run -d --name schedulerbot -p 3067:3067 -e NODE_ENV=production -e PORT=3067 -e DB_DIR=/opt/schedulerbot/db -v /opt/schedulerbot/db:/opt/schedulerbot/db -v /var/run/docker.sock:/var/run/docker.sock --restart unless-stopped gda3692/xtoolbot-client:latest
     `;
     
     exec(command, (error, stdout, stderr) => {
