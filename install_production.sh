@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
+# Version: 1.0.53 - 2026-03-15
 set -uo pipefail
 
 echo ""
 echo "==============================="
-echo "🚀 SchedulerBot Installer"
+echo "🚀 SchedulerBot Installer v1.0.53"
 echo "==============================="
 echo ""
 
@@ -32,13 +33,10 @@ docker pull "$FULL_IMAGE" || true
 
 # Detect if Linux server or local desktop
 if grep -qi linux /proc/version 2>/dev/null && [[ ! -d /Users ]]; then
-    # Linux server mode
     echo "🖥 Linux server mode"
-    
     mkdir -p "$DB_DIR"
     cd /opt
     
-    # Create docker-compose
     cat > docker-compose.yml << EOF
 version: "3.8"
 services:
@@ -57,13 +55,10 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 EOF
 
-    # Start with docker-compose
     docker compose -f docker-compose.yml up -d || docker-compose -f docker-compose.yml up -d
     
 else
-    # Local desktop mode
     echo "🖥 Local desktop mode"
-    
     mkdir -p "$DB_DIR"
     
     docker run -d \
@@ -83,6 +78,7 @@ echo "✅ Installation complete!"
 echo "➡️  Open: http://localhost:${HOST_PORT}"
 
 # ====== Host Upgrade Service ======
+echo ""
 echo "Installing host upgrade service..."
 
 # Install Node.js
@@ -108,4 +104,4 @@ pm2 save
 
 # Test
 sleep 2
-curl -s http://localhost:3068/health && echo " OK" || echo " Failed"
+curl -s http://localhost:3068/health && echo " ✅ Upgrade service OK" || echo " ⚠️ Upgrade service failed"
