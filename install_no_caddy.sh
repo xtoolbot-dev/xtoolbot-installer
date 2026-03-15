@@ -33,6 +33,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 COMPOSE
 
-docker compose -f docker-compose.prod.yml up -d
+echo "🚀 Starting container..."
+docker-compose -f docker-compose.prod.yml up -d
 
 echo "✅ Done! Access at: http://localhost:3067"
