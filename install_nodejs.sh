@@ -1,13 +1,11 @@
 #!/bin/bash
 set -e
 
-# GitHub Token (请替换为你的 token)
-GH_TOKEN="${GH_TOKEN:-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}"
-
+VERSION="${1:-latest}"
 APP_DIR="/opt/xtoolbot"
 PORT=3067
 DB_DIR="$APP_DIR/db"
-DOMAIN="${1:-localhost}"
+DOMAIN="${2:-localhost}"
 
 cd /tmp
 
@@ -46,19 +44,14 @@ echo "✅ Caddy 已安装"
 
 # 创建目录
 sudo mkdir -p "$DB_DIR"
-cd /tmp
 
-# 克隆或更新代码
-if [ -d "$APP_DIR/.git" ]; then
-    echo "📥 更新代码..."
-    cd "$APP_DIR"
-    sudo git pull
-else
-    echo "📥 下载代码..."
-    sudo rm -rf "$APP_DIR"
-    sudo git clone https://${GH_TOKEN}@github.com/xtoolbot-dev/xtoolbot-client.git "$APP_DIR"
-    cd "$APP_DIR"
-fi
+# 下载并解压
+echo "📥 下载 XtoolBot v$VERSION..."
+cd /tmp
+rm -rf xtoolbot-client
+curl -sL "https://github.com/xtoolbot-dev/xtoolbot-client/archive/refs/tags/v$VERSION.zip" -o xtoolbot.zip
+unzip -q xtoolbot.zip
+cd xtoolbot-client
 
 # 安装依赖
 echo "📦 安装依赖..."
