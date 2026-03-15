@@ -17,7 +17,7 @@ echo "========================================"
 if ! command -v node >/dev/null 2>&1; then
     echo "📦 安装 Node.js..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+    sudo apt-get install -y nodejs unzip
 fi
 
 echo "✅ Node.js 版本: $(node -v)"
@@ -48,10 +48,14 @@ sudo mkdir -p "$DB_DIR"
 # 下载并解压
 echo "📥 下载 XtoolBot v$VERSION..."
 cd /tmp
-rm -rf xtoolbot-client
+rm -rf xtoolbot-client xtoolbot.zip
 curl -sL "https://github.com/xtoolbot-dev/xtoolbot-client/archive/refs/tags/v$VERSION.zip" -o xtoolbot.zip
 unzip -q xtoolbot.zip
-cd xtoolbot-client
+cd xtoolbot-client-*
+
+# 复制到目标目录
+sudo rm -rf "$APP_DIR"
+sudo mv . "$APP_DIR"
 
 # 安装依赖
 echo "📦 安装依赖..."
