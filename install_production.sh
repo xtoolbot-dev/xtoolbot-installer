@@ -292,9 +292,20 @@ else
     echo "⚠️ Upgrade service failed"
 fi
 
+# 獲取公網 IP
+PUBLIC_IP=""
+if command -v curl >/dev/null 2>&1; then
+    PUBLIC_IP=$(curl -s -4 ifconfig.me 2>/dev/null || curl -s -4 ipinfo.io 2>/dev/null || echo "")
+fi
+
 echo ""
 echo "======================================"
-echo "💡 首次登入請在瀏覽器開啟："
-echo " 👉 http://localhost:${HOST_PORT}"
+if [ -n "$PUBLIC_IP" ]; then
+    echo "💡 首次登入請在瀏覽器開啟："
+    echo " 👉 http://${PUBLIC_IP}:${HOST_PORT}"
+else
+    echo "💡 首次登入請在瀏覽器開啟："
+    echo " 👉 http://localhost:${HOST_PORT}"
+fi
 echo " （之後設定好網域與 HTTPS 後，請改用你的網域登入）"
 echo "======================================"
