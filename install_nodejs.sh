@@ -7,7 +7,7 @@ DB_DIR="$APP_DIR/db"
 DOMAIN="${1:-localhost}"
 
 echo "========================================"
-echo "🚀 XtoolBot 安装 (Node.js + Caddy)"
+echo "🚀 XtoolBot 安装 (Node.js + Caddy + PM2)"
 echo "========================================"
 
 # 安装 Node.js
@@ -18,6 +18,14 @@ if ! command -v node >/dev/null 2>&1; then
 fi
 
 echo "✅ Node.js 版本: $(node -v)"
+
+# 安装 PM2
+if ! command -v pm2 >/dev/null 2>&1; then
+    echo "📦 安装 PM2..."
+    sudo npm install -g pm2
+fi
+
+echo "✅ PM2 已安装"
 
 # 安装 Caddy
 if ! command -v caddy >/dev/null 2>&1; then
@@ -52,6 +60,16 @@ echo "📦 安装依赖..."
 cd "$APP_DIR/social-scheduler-api"
 sudo npm install --production
 
+# 配置 PM2 启动
+echo "📝 配置 PM2..."
+cd "$APP_DIR/social-scheduler-api"
+sudo pm2 delete xtoolbot 2>/dev/null || true
+sudo PORT=$PORT DB_DIR=$DB_DIR NODE_ENV=production pm2 start npm --name xtoolbot -- start
+sudo pm2 save
+
+# 设置开机自启
+sudo pm2 startup 2>/dev/null || sudo env PATH=$PATH:/usr/local/bin pm2 startup
+
 # 配置 Caddyfile
 echo "📝 配置 Caddy..."
 sudo tee /etc/caddy/Caddyfile > /dev/null <<CADDY
@@ -63,13 +81,13 @@ CADDY
 
 # 启动服务
 echo "🚀 启动服务..."
-sudo pkill -f "node.*social-scheduler-api" 2>/dev/null || true
-cd "$APP_DIR/social-scheduler-api"
-sudo PORT=$PORT DB_DIR=$DB_DIR NODE_ENV=production nohup npm start > /tmp/xtoolbot.log 2>&1 &
-
-# 重启 Caddy
 sudo caddy reload --config /etc/caddy/Caddyfile
 
 echo ""
 echo "✅ 安装完成！"
 echo "➡️  访问: http://$DOMAIN"
+echo ""
+echo "📋 PM2 命令:"
+echo "   pm2 status     - 查看状态"
+echo "   pm2 logs      - 查看日志"
+echo "   pm2 restart   - 重启服务"
