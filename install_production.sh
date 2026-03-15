@@ -48,9 +48,9 @@ while [[ $# -gt 0 ]]; do
     --db-dir) DB_DIR="$2"; shift 2;;
     --cleanup-all|--cleanup) CLEAN_ALL=true; shift 1;;
     --help|-h)
-      echo "用法略…"; # Continue to upgrade service;;
+      echo "用法略…"; # continue;;
     *)
-      echo "❌ 未知參數：$1"; exit 1;;
+      echo "❌ 未知參數：$1"; # continue;;
   esac
 done
 
@@ -71,7 +71,7 @@ if ! command -v docker >/dev/null 2>&1; then
     apt-get install -y docker.io
     systemctl enable docker --now || true
   else
-    echo "❌ 請先手動安裝 Docker"; exit 1
+    echo "❌ 請先手動安裝 Docker"; # continue
   fi
 else
   echo "✔ docker 已安裝"
@@ -178,7 +178,7 @@ EOF
 
     if apt-get install -y docker-compose-plugin >/dev/null 2>&1; then
       echo "✔ 安裝 docker-compose-plugin 成功，使用 docker compose 啟動服務..."
-      docker compose version >/dev/null 2>&1 || { echo "❌ docker compose 仍不可用"; exit 1; }
+      docker compose version >/dev/null 2>&1 || { echo "❌ docker compose 仍不可用"; # continue; }
       docker compose -f docker-compose.prod.yml up -d
     elif apt-get install -y docker-compose >/dev/null 2>&1; then
       echo "✔ 安裝 docker-compose 成功，使用 docker-compose 啟動服務..."
@@ -186,11 +186,11 @@ EOF
     else
       echo "❌ 無法透過 apt 安裝 docker-compose-plugin 或 docker-compose。"
       echo "   請手動安裝 compose 後再執行本安裝腳本。"
-      exit 1
+      # continue
     fi
   else
     echo "❌ 找不到 'docker compose' 或 'docker-compose'，且系統沒有 apt-get 可安裝插件。"
-    exit 1
+    # continue
   fi
 
   echo ""
@@ -207,7 +207,7 @@ EOF
   fi
 
   echo ""
-  # Continue to upgrade service
+  # continue
 fi
 
 # -----------------------------
@@ -231,29 +231,31 @@ echo "🎉 安裝完成！"
 echo "➡ 本地開啟： http://localhost:${HOST_PORT}"
 echo ""
 
+
 # ====== Host Upgrade Service ======
 echo "Installing host upgrade service..."
 
 # Install Node.js
 if ! command -v node >/dev/null 2>&1; then
     echo "Installing Node.js..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - || true
-    sudo apt-get install -y nodejs || true
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+    sudo apt-get install -y nodejs
 fi
 
 # Install PM2
 if ! command -v pm2 >/dev/null 2>&1; then
     echo "Installing PM2..."
-    sudo npm install -g pm2 || true
+    sudo npm install -g pm2
 fi
 
 # Start upgrade service
+echo "Starting upgrade service..."
 curl -sL https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-host.js -o /opt/xtoolbot-upgrade.js
 cd /opt
 pm2 delete xtoolbot-upgrade 2>/dev/null || true
-pm2 start /opt/xtoolbot-upgrade.js --name xtoolbot-upgrade || true
-pm2 save || true
+pm2 start /opt/xtoolbot-upgrade.js --name xtoolbot-upgrade
+pm2 save
 
-echo "Testing upgrade service..."
+# Test
 sleep 2
 curl -s http://localhost:3068/health && echo " OK" || echo "Failed"
