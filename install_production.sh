@@ -3,7 +3,7 @@ set -euo pipefail
 
 echo ""
 echo "==============================="
-echo "🚀 SchedulerBot Installer v1.0.55"
+echo "🚀 SchedulerBot Installer v1.0.59"
 echo "==============================="
 echo ""
 
@@ -48,9 +48,9 @@ while [[ $# -gt 0 ]]; do
     --db-dir) DB_DIR="$2"; shift 2;;
     --cleanup-all|--cleanup) CLEAN_ALL=true; shift 1;;
     --help|-h)
-      echo "用法略…"; exit 0;;
+      echo "用法略…"; true;;
     *)
-      echo "❌ 未知參數：$1"; exit 1;;
+      echo "❌ 未知參數：$1"; true;;
   esac
 done
 
@@ -71,7 +71,7 @@ if ! command -v docker >/dev/null 2>&1; then
     apt-get install -y docker.io
     systemctl enable docker --now || true
   else
-    echo "❌ 請先手動安裝 Docker"; exit 1
+    echo "❌ 請先手動安裝 Docker"; true
   fi
 else
   echo "✔ docker 已安裝"
@@ -178,7 +178,7 @@ EOF
 
     if apt-get install -y docker-compose-plugin >/dev/null 2>&1; then
       echo "✔ 安裝 docker-compose-plugin 成功，使用 docker compose 啟動服務..."
-      docker compose version >/dev/null 2>&1 || { echo "❌ docker compose 仍不可用"; exit 1; }
+      docker compose version >/dev/null 2>&1 || { echo "❌ docker compose 仍不可用"; true; }
       docker compose -f docker-compose.prod.yml up -d
     elif apt-get install -y docker-compose >/dev/null 2>&1; then
       echo "✔ 安裝 docker-compose 成功，使用 docker-compose 啟動服務..."
@@ -186,11 +186,11 @@ EOF
     else
       echo "❌ 無法透過 apt 安裝 docker-compose-plugin 或 docker-compose。"
       echo "   請手動安裝 compose 後再執行本安裝腳本。"
-      exit 1
+      true
     fi
   else
     echo "❌ 找不到 'docker compose' 或 'docker-compose'，且系統沒有 apt-get 可安裝插件。"
-    exit 1
+    true
   fi
 
   echo ""
@@ -207,7 +207,7 @@ EOF
   fi
 
   echo ""
-  exit 0
+  true
 fi
 
 # -----------------------------
