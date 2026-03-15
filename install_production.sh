@@ -119,6 +119,7 @@ services:
       - CADDY_ADMIN_URL=http://schedulerbot-caddy:2019/load
     volumes:
       - ${DB_DIR}:${INTERNAL_DB_DIR}
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./Caddyfile:/opt/xtoolbot-server/Caddyfile
 
   schedulerbot-caddy:
