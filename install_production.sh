@@ -259,4 +259,15 @@ pm2 save
 
 # Test
 sleep 2
-curl -s http://localhost:3068/health && echo " ✅ Upgrade service OK" || echo " ⚠️ Upgrade service failed"
+if curl -s http://localhost:3068/health >/dev/null; then
+    echo "✅ Upgrade service OK"
+else
+    echo "⚠️ Upgrade service failed"
+fi
+
+echo ""
+echo "======================================"
+echo "💡 首次登入請在瀏覽器開啟："
+echo " 👉 http://localhost:${HOST_PORT}"
+echo " （之後設定好網域與 HTTPS 後，請改用你的網域登入）"
+echo "======================================"
