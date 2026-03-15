@@ -3,7 +3,7 @@ set -euo pipefail
 
 echo ""
 echo "==============================="
-echo "🚀 SchedulerBot Installer v1.0.64"
+echo "🚀 SchedulerBot Installer v1.0.65"
 echo "==============================="
 echo ""
 
@@ -270,6 +270,12 @@ fi
 
 # Start upgrade service
 echo "Starting upgrade service..."
+
+# Restart container to reset upgrade status
+echo "Restarting schedulerbot container..."
+docker restart schedulerbot 2>/dev/null || true
+sleep 3
+
 cd /opt
 rm -f xtoolbot-upgrade.js
 curl -sL "https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-host.js?t=$(date +%s)" -o xtoolbot-upgrade.js
