@@ -59,6 +59,13 @@ FULL_IMAGE="$IMAGE:$VERSION"
 echo "📌 Version:   $VERSION"
 echo "📌 DB Path:   $DB_DIR"
 echo "📌 Container: $CONTAINER_NAME"
+
+# 自動檢測 Docker socket
+DOCKER_SOCKET="/var/run/docker.sock"
+if [ -S "$HOME/.docker/run/docker.sock" ]; then
+    DOCKER_SOCKET="$HOME/.docker/run/docker.sock"
+fi
+
 echo ""
 
 # -----------------------------
