@@ -5,31 +5,41 @@ const { spawn } = require('child_process');
 const PORT = 3068;
 
 const server = http.createServer((req, res) => {
-  console.log('[upgrade] Received request:', req.url);
+  console.log('[upgrade] Received request:', req.url, req.method);
   
   if (req.url === '/upgrade' && req.method === 'POST') {
     console.log('[upgrade] Starting upgrade on host...');
     
-    // Run upgrade command on host
+    // Simple upgrade: pull latest and restart
     const command = `
-      docker stop schedulerbot schedulerbot-caddy 2>/dev/null || true
-      docker rm schedulerbot schedulerbot-caddy 2>/dev/null || true
-      curl -s https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/install_production.sh | sudo bash
+      docker pull gda3692/xtoolbot-client:latest
+      docker stop schedulerbot 2>/dev/null || true
+      docker rm schedulerbot 2>/dev/null || true
+      docker run -d \
+        --name schedulerbot \
+        -p 3067:3067 \
+        -e TZ=Asia/Taipei \
+        -e NODE_ENV=production \
+        -e PORT=3067 \
+        -e DB_DIR=/opt/schedulerbot/db \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -v /opt/schedulerbot/db:/opt/schedulerbot/db \
+        --restart unless-stopped \
+        gda3692/xtoolbot-client:latest
     `;
     
-    console.log('[upgrade] Running:', command);
+    console.log('[upgrade] Running upgrade command...');
     
     const child = spawn('bash', ['-c', command], {
-      detached: true,
-      stdio: 'ignore'
+      stdio: 'inherit'
     });
     
-    child.unref();
-    
-    console.log('[upgrade] Upgrade started, pid:', child.pid);
+    child.on('close', (code) => {
+      console.log('[upgrade] Upgrade completed with code:', code);
+    });
     
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, message: 'Upgrade started on host' }));
+    res.end(JSON.stringify({ ok: true, message: 'Upgrade started' }));
     return;
   }
   
