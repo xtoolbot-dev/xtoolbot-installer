@@ -6,6 +6,8 @@ PORT=3067
 DB_DIR="$APP_DIR/db"
 DOMAIN="${1:-localhost}"
 
+cd /tmp
+
 echo "========================================"
 echo "🚀 XtoolBot 安装 (Node.js + Caddy + PM2)"
 echo "========================================"
@@ -41,10 +43,10 @@ echo "✅ Caddy 已安装"
 
 # 创建目录
 sudo mkdir -p "$DB_DIR"
-cd "$APP_DIR"
+cd /tmp
 
 # 克隆或更新代码
-if [ -d ".git" ]; then
+if [ -d "$APP_DIR/.git" ]; then
     echo "📥 更新代码..."
     cd "$APP_DIR"
     sudo git pull
