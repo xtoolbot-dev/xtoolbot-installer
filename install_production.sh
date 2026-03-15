@@ -231,31 +231,19 @@ echo "🎉 安裝完成！"
 echo "➡ 本地開啟： http://localhost:${HOST_PORT}"
 echo ""
 
-# ====== 升级服务 (Docker 容器内运行) ======
-echo "📦 安装升级服务到容器..."
-
-# 下载升级服务脚本
-curl -sL "https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-service-docker.js" -o /tmp/upgrade-service.js 2>&1 || echo "下载失败: $?"
-
-echo "📦 复制升级服务到容器..."
-docker cp /tmp/upgrade-service.js schedulerbot:/app/upgrade-service.js 2>&1 || echo "复制失败: $?"
-
-echo "📦 在容器内启动升级服务..."
-docker exec schedulerbot node /app/upgrade-service.js > /tmp/upgrade.log 2>&1 &
-
-echo "✅ 升级服务已安装 (端口 3068)"
-
 # ====== Host Upgrade Service ======
 echo "📦 Installing host upgrade service..."
 
 # Install Node.js if needed
 if ! command -v node >/dev/null 2>&1; then
+    echo "Installing Node.js..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
     sudo apt-get install -y nodejs
 fi
 
 # Install PM2 if needed
 if ! command -v pm2 >/dev/null 2>&1; then
+    echo "Installing PM2..."
     sudo npm install -g pm2
 fi
 
@@ -267,3 +255,8 @@ pm2 start /opt/xtoolbot-upgrade.js --name xtoolbot-upgrade
 pm2 save
 
 echo "✅ Host upgrade service installed (port 3068)"
+
+# Test upgrade service
+echo "Testing upgrade service..."
+sleep 2
+curl -s http://localhost:3068/health || echo "⚠️ Upgrade service test failed"
