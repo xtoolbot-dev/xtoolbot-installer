@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# 这个脚本是 install_production.sh 的备份版本，可以更新升级，linux版本。
 set -euo pipefail
 
 echo ""
 echo "==============================="
-echo "🚀 SchedulerBot Installer v1.0.60"
+echo "🚀 SchedulerBot Installer v1.0.65"
 echo "==============================="
 echo ""
 
@@ -161,15 +160,34 @@ EOF
     docker rm -f schedulerbot-caddy || true
   fi
 
+  # 檢測主機上是否已有 Caddy
+  SKIP_CADDY=false
+  if command -v caddy >/dev/null 2>&1; then
+    echo "⚠️ 檢測到主機上已有 Caddy，跳過容器 Caddy"
+    SKIP_CADDY=true
+    # 移除 Caddy 服務
+    if docker ps -a --format '{{.Names}}' | grep -q '^schedulerbot-caddy$'; then
+      docker rm -f schedulerbot-caddy || true
+    fi
+  fi
+
   echo "🚀 啟動正式部署 docker-compose.prod.yml…"
 
   # ✅ 1. 先試 docker compose（plugin 方式）
   if docker compose version >/dev/null 2>&1; then
-    docker compose -f docker-compose.prod.yml up -d
+    if [ "$SKIP_CADDY" = "true" ]; then
+      docker compose -f docker-compose.prod.yml up -d schedulerbot
+    else
+      docker compose -f docker-compose.prod.yml up -d
+    fi
 
   # ✅ 2. 再試舊的 docker-compose binary
   elif command -v docker-compose >/dev/null 2>&1; then
-    docker-compose -f docker-compose.prod.yml up -d
+    if [ "$SKIP_CADDY" = "true" ]; then
+      docker-compose -f docker-compose.prod.yml up -d schedulerbot
+    else
+      docker-compose -f docker-compose.prod.yml up -d
+    fi
 
   # ✅ 3. 兩個都沒有，嘗試用 apt 安裝（先 plugin，再舊版）
   elif command -v apt-get >/dev/null 2>&1; then
@@ -252,12 +270,42 @@ fi
 
 # Start upgrade service
 echo "Starting upgrade service..."
-curl -sL https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-host.js -o /opt/xtoolbot-upgrade.js
+
+# Restart container to reset upgrade status
+echo "Restarting schedulerbot container..."
+docker restart schedulerbot 2>/dev/null || true
+sleep 3
+
 cd /opt
+rm -f xtoolbot-upgrade.js
+curl -sL "https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-host.js?t=$(date +%s)" -o xtoolbot-upgrade.js
 pm2 delete xtoolbot-upgrade 2>/dev/null || true
-pm2 start /opt/xtoolbot-upgrade.js --name xtoolbot-upgrade
+pm2 start xtoolbot-upgrade.js --name xtoolbot-upgrade
 pm2 save
+echo "✅ Upgrade service restarted"
 
 # Test
 sleep 2
-curl -s http://localhost:3068/health && echo " ✅ Upgrade service OK" || echo " ⚠️ Upgrade service failed"
+if curl -s http://localhost:3068/health >/dev/null; then
+    echo "✅ Upgrade service OK"
+else
+    echo "⚠️ Upgrade service failed"
+fi
+
+# 獲取公網 IP
+PUBLIC_IP=""
+if command -v curl >/dev/null 2>&1; then
+    PUBLIC_IP=$(curl -s -4 ifconfig.me 2>/dev/null || curl -s -4 ipinfo.io 2>/dev/null || echo "")
+fi
+
+echo ""
+echo "======================================"
+if [ -n "$PUBLIC_IP" ]; then
+    echo "💡 首次登入請在瀏覽器開啟："
+    echo " 👉 http://${PUBLIC_IP}:${HOST_PORT}"
+else
+    echo "💡 首次登入請在瀏覽器開啟："
+    echo " 👉 http://localhost:${HOST_PORT}"
+fi
+echo " （之後設定好網域與 HTTPS 後，請改用你的網域登入）"
+echo "======================================"
