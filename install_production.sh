@@ -240,7 +240,7 @@ docker run -d \
   -e TZ=Asia/Taipei \
   -e SERVER_URL="http://localhost:${HOST_PORT}" \
   -e DB_DIR="${INTERNAL_DB_DIR}" \
-  -v "/var/run/docker.sock:/var/run/docker.sock" \
+  -v "${DOCKER_SOCKET}:${DOCKER_SOCKET}" \
   -v "${DB_DIR}:${INTERNAL_DB_DIR}" \
   --restart unless-stopped \
   "$FULL_IMAGE" || true
