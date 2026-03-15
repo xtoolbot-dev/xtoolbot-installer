@@ -224,7 +224,7 @@ docker run -d \
   -v "/var/run/docker.sock:/var/run/docker.sock" \
   -v "${DB_DIR}:${INTERNAL_DB_DIR}" \
   --restart unless-stopped \
-  "$FULL_IMAGE"
+  "$FULL_IMAGE" || true
 
 echo ""
 echo "🎉 安裝完成！"
