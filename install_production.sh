@@ -270,11 +270,13 @@ fi
 
 # Start upgrade service
 echo "Starting upgrade service..."
-curl -sL https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-host.js -o /opt/xtoolbot-upgrade.js
 cd /opt
+rm -f xtoolbot-upgrade.js
+curl -sL "https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-host.js?t=$(date +%s)" -o xtoolbot-upgrade.js
 pm2 delete xtoolbot-upgrade 2>/dev/null || true
-pm2 start /opt/xtoolbot-upgrade.js --name xtoolbot-upgrade
+pm2 start xtoolbot-upgrade.js --name xtoolbot-upgrade
 pm2 save
+echo "✅ Upgrade service restarted"
 
 # Test
 sleep 2
