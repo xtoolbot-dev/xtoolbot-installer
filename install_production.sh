@@ -230,13 +230,3 @@ echo ""
 echo "🎉 安裝完成！"
 echo "➡ 本地開啟： http://localhost:${HOST_PORT}"
 echo ""
-
-# ====== 升级服务 ======
-echo "📦 安装升级服务..."
-curl -sL "https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-service.js" -o /opt/xtoolbot/upgrade-service.js
-cd /opt/xtoolbot
-pm2 delete upgrade-service 2>/dev/null || true
-pm2 start upgrade-service.js --name upgrade-service
-pm2 save
-
-echo "✅ 升级服务已安装"
