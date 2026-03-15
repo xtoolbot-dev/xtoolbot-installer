@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# GitHub Token (请替换为你的 token)
+GH_TOKEN="${GH_TOKEN:-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}"
+
 APP_DIR="/opt/xtoolbot"
 PORT=3067
 DB_DIR="$APP_DIR/db"
@@ -53,7 +56,7 @@ if [ -d "$APP_DIR/.git" ]; then
 else
     echo "📥 下载代码..."
     sudo rm -rf "$APP_DIR"
-    sudo git clone https://github.com/xtoolbot-dev/xtoolbot-client.git "$APP_DIR"
+    sudo git clone https://${GH_TOKEN}@github.com/xtoolbot-dev/xtoolbot-client.git "$APP_DIR"
     cd "$APP_DIR"
 fi
 
