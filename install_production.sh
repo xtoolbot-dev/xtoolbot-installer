@@ -69,6 +69,27 @@ fi
 echo ""
 
 # -----------------------------
+# 啟動 Docker Desktop（Mac）
+# -----------------------------
+if [[ "${OSTYPE:-}" == darwin* ]]; then
+  if command -v open >/dev/null 2>&1; then
+    # 嘗試啟動 Docker Desktop
+    if ! docker info >/dev/null 2>&1; then
+      echo "🐳 啟動 Docker Desktop..."
+      open -a Docker || true
+      echo "⏳ 等待 Docker 啟動..."
+      for i in {1..30}; do
+        if docker info >/dev/null 2>&1; then
+          echo "✅ Docker 已啟動"
+          break
+        fi
+        sleep 2
+      done
+    fi
+  fi
+fi
+
+# -----------------------------
 # 安裝 Docker（保留）
 # -----------------------------
 if ! command -v docker >/dev/null 2>&1; then
