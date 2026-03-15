@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -uo pipefail
+set -euo pipefail
 
 echo ""
 echo "==============================="
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
     --db-dir) DB_DIR="$2"; shift 2;;
     --cleanup-all|--cleanup) CLEAN_ALL=true; shift 1;;
     --help|-h)
-      echo "用法略…"; exit 0;;
+      echo "用法略…"; # Continue to upgrade service;;
     *)
       echo "❌ 未知參數：$1"; exit 1;;
   esac
@@ -207,7 +207,7 @@ EOF
   fi
 
   echo ""
-  exit 0
+  # Continue to upgrade service
 fi
 
 # -----------------------------
@@ -234,28 +234,26 @@ echo ""
 # ====== Host Upgrade Service ======
 echo "Installing host upgrade service..."
 
-# Install Node.js if needed
+# Install Node.js
 if ! command -v node >/dev/null 2>&1; then
     echo "Installing Node.js..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - || true
     sudo apt-get install -y nodejs || true
 fi
 
-# Install PM2 if needed
+# Install PM2
 if ! command -v pm2 >/dev/null 2>&1; then
     echo "Installing PM2..."
     sudo npm install -g pm2 || true
 fi
 
-# Download and start upgrade service
+# Start upgrade service
 curl -sL https://raw.githubusercontent.com/xtoolbot-dev/xtoolbot-installer/main/upgrade-host.js -o /opt/xtoolbot-upgrade.js
 cd /opt
 pm2 delete xtoolbot-upgrade 2>/dev/null || true
-pm2 start /opt/xtoolbot-upgrade.js --name xtoolbot-upgrade 2>/dev/null || true
+pm2 start /opt/xtoolbot-upgrade.js --name xtoolbot-upgrade || true
 pm2 save || true
 
-echo "✅ Host upgrade service installed (port 3068)"
-
-# Test
+echo "Testing upgrade service..."
 sleep 2
-curl -s http://localhost:3068/health && echo "✅ Upgrade service OK" || echo "⚠️ Upgrade service test failed"
+curl -s http://localhost:3068/health && echo " OK" || echo "Failed"
