@@ -3,7 +3,7 @@ set -euo pipefail
 
 echo ""
 echo "==============================="
-echo "🚀 SchedulerBot Installer v1.0.71"
+echo "🚀 SchedulerBot Installer v1.0.72"
 echo "==============================="
 echo ""
 
