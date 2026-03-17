@@ -3,7 +3,7 @@ set -euo pipefail
 
 echo ""
 echo "==============================="
-echo "🚀 SchedulerBot Installer v1.0.71"
+echo "🚀 SchedulerBot Installer v1.0.74"
 echo "==============================="
 echo ""
 
@@ -284,10 +284,10 @@ echo ""
 echo "Installing host upgrade service..."
 
 # Install Node.js if needed
-if ! command -v node >/dev/null 2>&1; then
+if ! command -v node >/dev/null 2>&1 && ! command -v nodejs >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
     echo "Installing Node.js..."
     curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
+    sudo apt-get install -y nodejs npm
 fi
 
 # Install PM2 if needed  
